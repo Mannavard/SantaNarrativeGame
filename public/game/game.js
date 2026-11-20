@@ -331,7 +331,7 @@ function layout(){
   let s,left,top;
   if(portrait){s=vw/(LW*.74);left=-LW*.17*s;                          // phones: crop to the window, lamp and clock (x 17%..91%)
     top=topInset+Math.max(14,(vh-330-topInset-LH*s*.86)/2)}             // and sit between the stepper and the dialogue
-  else{s=Math.min(vw/LW,(vh-topInset)/LH);left=(vw-LW*s)/2;top=topInset}
+  else{s=Math.max(.05,Math.min(vw/LW,(vh-topInset)/LH));left=(vw-LW*s)/2;top=topInset}      // never <=0 (a hidden or zero-height window)
   box={s,left,top,w:LW*s,h:LH*s,P:Math.max(2,Math.round(3*s))};
   imgsEl.style.left=left+'px';imgsEl.style.top=top+'px';imgsEl.style.width=box.w+'px';imgsEl.style.height=box.h+'px';
   fx.style.left=left+'px';fx.style.top=top+'px';fx.style.width=box.w+'px';fx.style.height=box.h+'px';
@@ -526,6 +526,7 @@ clockBtnEl.addEventListener('pointerenter',()=>{clockHover=true});clockBtnEl.add
 const makeGR=t=>[6,14,24,38,58,88,130,190,250].map(g=>`rgb(${Math.round(g*t[0])},${Math.round(g*t[1])},${Math.min(255,Math.round(g*t[2]))})`);
 let GR=makeGR([1,1,1.02]);
 function frame(ts){
+  requestAnimationFrame(frame);                          // first, so one bad frame can never stop the loop
   const dt=Math.min(.05,(ts-(frame.last||ts))/1000);frame.last=ts;t+=dt;
   lampPower+=(lampTarget-lampPower)*Math.min(1,dt*lampRate);
   dip*=Math.pow(.02,dt);if(Math.random()<dt*.3)dip=.12+Math.random()*.2;
@@ -585,7 +586,6 @@ function frame(ts){
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;c.fillStyle=`rgba(255,${p.g},120,${Math.min(1,p.life/p.max*1.6).toFixed(2)})`;
     const z=p.big?2:1;c.fillRect(Math.round(p.x),Math.round(p.y),z,z);if(p.big){c.fillRect(Math.round(p.x)-1,Math.round(p.y),1,1);c.fillRect(Math.round(p.x)+2,Math.round(p.y),1,1)}}
   drawClock();
-  requestAnimationFrame(frame);
 }
 
 const setLamp=v=>{lampPower=lampTarget=v};
