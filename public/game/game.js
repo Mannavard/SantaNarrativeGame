@@ -508,17 +508,73 @@ function drawClock(){
   c.shadowBlur=0;
   if(unitsRoom){const f=fitFont(st.units,w-2*pad,[6,5]);c.font=uiFont(f);c.textAlign='center';c.fillStyle=hexA(lit,.55);c.fillText(st.units,w/2,Math.round(h-pad-1))}
 }
-/* ---- the mouse as wind: sweeping over the window blows the snow away and stirs it up (see frame) ---- */
-const WIND_R=110;                                         // reach of the gust, in logical px of the picture
-const wind={x:0,y:0,vx:0,vy:0,on:false,t:0};
+/* ---- the mouse as a body moving through the air ----------------------------------------------------
+   The cursor is a small round body. As it moves, the air has to get out of its way and fill the space behind it:
+   - flow around it (potential flow around a moving cylinder): snow ahead is pushed forward, snow at the sides is
+     dragged back, and snow behind is sucked in after the cursor;
+   - the faster it goes, the more it sheds swirls into the wake (alternately on the left and right, like a vortex
+     street); each swirl spins the snow around it and fades out in about a second.
+   Slow movement = barely a ripple; a stopped cursor = still air. The path is integrated in small steps, so a fast
+   sweep cannot jump over the snowflakes. */
+const BODY_R=36;
+const PART_FULL=450;                                      // cursor speed (logical px/s) at which the gentle parting reaches full strength; slower than that it fades out quadratically (a crawl barely stirs the snow)
+const WAKE_FROM=260,WAKE_FULL=950;                        // cursor speed (logical px/s) below which the air has time to refill behind it (only parting), and above which the wake is fully developed
+const sstep=(a,b,x)=>{const u=clamp((x-a)/(b-a),0,1);return u*u*(3-2*u)};                                          // radius of the cursor "body", logical px of the picture
+const wind={x:0,y:0,px:0,py:0,sp:0,t:0,on:false,side:1,acc:0};   // x,y = cursor now, px,py = where it was at the last frame, sp = smoothed speed (fx px/s)
+const vort=[];                                            // wake swirls: {x,y,g (circulation, sign = spin),rc (core radius),age}
 let steam=[],steamAcc=0;
 addEventListener('pointermove',e=>{
-  const now=performance.now(),cx=(e.clientX-box.left)/box.P-glass.x,cy=(e.clientY-box.top)/box.P-glass.y;
-  if(wind.on){const d=Math.max(.012,(now-wind.t)/1000);wind.vx=wind.vx*.4+clamp((cx-wind.x)/d,-900,900)*.6;wind.vy=wind.vy*.4+clamp((cy-wind.y)/d,-900,900)*.6}
-  wind.x=cx;wind.y=cy;wind.t=now;wind.on=true;
+  const x=(e.clientX-box.left)/box.P-glass.x,y=(e.clientY-box.top)/box.P-glass.y,now=performance.now();
+  if(!wind.on){wind.px=x;wind.py=y;wind.sp=0}                  // (re)entering: no jump from the old place
+  else{const d=Math.hypot(x-wind.x,y-wind.y),dt=Math.max(.004,(now-wind.t)/1000);wind.sp=wind.sp*.5+Math.min(1500,d/dt)*.5}
+  wind.x=x;wind.y=y;wind.t=now;wind.on=true;
 },{passive:true});
-document.documentElement.addEventListener('pointerleave',()=>{wind.on=false});
-addEventListener('blur',()=>{wind.on=false});
+const windOff=()=>{wind.on=false;wind.sp=0};
+document.addEventListener('mouseleave',windOff);addEventListener('blur',windOff);
+function stirSnow(dt,k){
+  const a=BODY_R*k,a2=a*a,reach=a*4.6,reach2=reach*reach;
+  wind.sp*=Math.exp(-dt*7);                                // no events = the cursor has stopped
+  const wake=sstep(WAKE_FROM,WAKE_FULL,wind.sp/k);          // 0 = slow: the snow is only gently parted; 1 = fast: low pressure behind the cursor, flow around it, shed swirls
+  const part=clamp(wind.sp/k/PART_FULL,0,1)**2;
+  if(wind.on){
+    const mx=wind.x-wind.px,my=wind.y-wind.py,dist=Math.hypot(mx,my);
+    if(dist>.02){
+      const n=clamp(Math.ceil(dist/(a*.45)),1,40),sx=mx/n,sy=my/n,ux=mx/dist,uy=my/dist;
+      const gain=2,L=a*1.2,sm=dist/n;                              // L = path length between two shed swirls
+      for(let s=1;s<=n;s++){
+        const cx=wind.px+sx*s,cy=wind.py+sy*s;
+        for(const f of flakes){
+          let dx=f.x-cx,dy=f.y-cy,r2=dx*dx+dy*dy;if(r2>reach2)continue;
+          let r=Math.sqrt(r2);
+          if(r<a){if(r<.01){dx=a;dy=0}else{dx*=a/r;dy*=a/r}r=a;r2=a2}   // inside the body: treated as on its surface
+          const dd=sx*dx+sy*dy,q=a2/r2,fall=1-clamp((r-a*2.2)/(reach-a*2.2),0,1)**2,mm=gain*q*fall*(1.15-.35*f.z),m=mm/r2;
+          // fast: flow around a moving cylinder, u = a²/r² (2 (U·r̂) r̂ - U), U = the step: ahead pushed on, sides dragged back, behind sucked in
+          // slow: the air refills behind in time, so the flakes are only pushed out of the way (radially), in proportion to the step
+          const pk=(1-wake)*part*.8*mm*sm/r;
+          f.x+=wake*m*(2*dd*dx-sx*r2)+pk*dx;f.y+=wake*m*(2*dd*dy-sy*r2)+pk*dy;
+        }
+        wind.acc+=dist/n;
+        if(wind.acc>=L){wind.acc-=L;wind.side=-wind.side;
+          const G=wind.side*Math.min(wind.sp,520)*a*5*wake;
+          if(Math.abs(G)>a*14)vort.push({x:cx-ux*a*.9-uy*wind.side*a*.85,y:cy-uy*a*.9+ux*wind.side*a*.85,g:G,rc:a*.9,age:0});
+          if(vort.length>48)vort.shift()}
+      }
+    }
+    wind.px=wind.x;wind.py=wind.y;
+  }
+  for(let i=vort.length-1;i>=0;i--){const v=vort[i];v.age+=dt;v.g*=Math.exp(-dt/1);if(v.age>2.4||Math.abs(v.g)<a*6){vort.splice(i,1)}}
+  if(vort.length){
+    for(const f of flakes){
+      let vx=0,vy=0;
+      for(const v of vort){
+        const rc=v.rc*(1+v.age*.9),dx=f.x-v.x,dy=f.y-v.y,r2=dx*dx+dy*dy;if(r2>rc*rc*25)continue;
+        const kk=v.g*(1-Math.exp(-r2/(rc*rc)))/(6.283*Math.max(r2,.5));
+        vx-=dy*kk;vy+=dx*kk}
+      const vs=Math.hypot(vx,vy),cap=260*k/.3;if(vs>cap){vx*=cap/vs;vy*=cap/vs}      // a very fast flick must not throw the snow across the window
+      f.x+=vx*dt*(1.15-.35*f.z);f.y+=vy*dt*(1.15-.35*f.z);
+    }
+  }
+}
 const clockBtnEl=$('#clockBtn');
 clockBtnEl.addEventListener('click',e=>{e.stopPropagation();if(clockForced)return;clockClicked=true;nextMode();clockPausedUntil=Date.now()+25000});
 clockBtnEl.addEventListener('pointerenter',()=>{clockHover=true});clockBtnEl.addEventListener('pointerleave',()=>{clockHover=false});
@@ -544,22 +600,8 @@ function frame(ts){
   if(lp>.02){c.globalCompositeOperation='lighter';const gr=c.createRadialGradient(lx,ly,0,lx,ly,LR);
     const gc=(meta.glow||[255,255,255]).join(',');gr.addColorStop(0,`rgba(${gc},${(.22*lp).toFixed(3)})`);gr.addColorStop(1,`rgba(${gc},0)`);c.fillStyle=gr;c.fillRect(lx-LR,ly-LR,LR*2,LR*2);c.globalCompositeOperation='source-over'}
   const sway=Math.sin(t*.35)*6,gx=glass.x,gy=glass.y,gw=glass.w,gh=glass.h;
-  // the cursor as a gust of wind: it moves with the mouse, fades quickly once the mouse stops
-  const dec=Math.exp(-dt*5);wind.vx*=dec;wind.vy*=dec;
-  const wsp=Math.hypot(wind.vx,wind.vy),windOn=wind.on&&wsp>25,WR=WIND_R*k,damp=Math.exp(-dt*1.7);
-  const wux=windOn?wind.vx/wsp:0,wuy=windOn?wind.vy/wsp:0;
+  stirSnow(dt,k);
   for(const f of flakes){
-    if(windOn){
-      const dx=f.x-wind.x,dy=f.y-wind.y,r2=dx*dx+dy*dy;
-      if(r2<WR*WR){
-        const r=Math.sqrt(r2)+.01,w=1-r/WR,A=Math.min(wsp,700)*1.5*(1.3-.6*f.z)*w*dt,
-              side=(wux*dy-wuy*dx)>=0?1:-1;                  // which side of the path the flake is on: the two sides swirl in opposite directions
-        f.vx+=A*(.9*dx/r+.55*wux-.9*side*dy/r);
-        f.vy+=A*(.9*dy/r+.55*wuy+.9*side*dx/r);
-      }
-    }
-    f.vx*=damp;f.vy*=damp;
-    f.x+=f.vx*dt;f.y+=f.vy*dt;
     f.y+=(10+f.z*22)*dt*(box.s>.5?1:.8);f.x+=(Math.sin(t*.9+f.ph)*(3+f.z*5)+sway*(.4+f.z))*dt;
     if(f.y>=gh){f.y=-2;f.x=Math.random()*gw}
     if(f.x<0)f.x+=gw;else if(f.x>=gw)f.x-=gw;
