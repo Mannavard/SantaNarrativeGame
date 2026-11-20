@@ -1,0 +1,48 @@
+<div id="art">
+  <div id="imgs"><img id="imgA" alt=""><canvas id="dis"></canvas></div>
+  <canvas id="fx"></canvas>
+  <canvas id="clk"></canvas>
+  <div id="giftSh"></div><div id="giftHint">TAP THE BOX</div>
+  <div id="gift" role="button" tabindex="0" aria-label="Open the gift"><img id="giftBody" alt=""><div id="heartWrap"><img id="heart" alt=""></div><img id="giftLid" alt=""></div>
+</div>
+<div id="flash"></div>
+<div id="crt"></div>
+
+<nav id="stepper" aria-label="Journey progress">
+  <ol id="steps"></ol>
+  <div id="steplbl">THE ROAD HASN'T BEGUN</div>
+</nav>
+
+<button id="mute" type="button" aria-pressed="true" aria-label="Music on / off">
+  <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+    <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/>
+    <path class="w" d="M11 6v4M13 4v8" stroke="currentColor" stroke-width="1.4" fill="none"/>
+    <path class="x" d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.4" fill="none"/>
+  </svg>
+</button>
+
+<div id="clockUI"><button id="clockBtn" type="button" aria-label="Switch clock mode"></button></div>
+
+<div id="dialog" role="region" aria-label="Dialogue">
+  <div id="tag"></div>
+  <div id="text"></div>
+  <div id="choices"></div>
+  <div id="next"></div>
+</div>
+<div class="sr" id="sr" aria-live="polite"></div>
+
+<div id="end"><h2 id="endH">THE END?</h2><button id="retry" type="button">↻ CHANGE YOUR MIND</button></div>
+<button id="remind" class="pxbtn" type="button">↻ REMIND ME TO COME BACK</button>
+<div id="card"><canvas id="cardCv" width="900" height="1260"></canvas>
+  <div class="row"><button id="cardSave" class="pxbtn" type="button">SAVE THE CARD</button><button id="cardClose" class="pxbtn" type="button">CLOSE</button></div></div>
+
+<div id="gate" class="pick">
+  <div id="langView">
+    <div class="a">LANGUAGE · ЯЗЫК · LIMBA</div>
+    <div class="langs"><button type="button" data-l="ru">РУССКИЙ</button><button type="button" data-l="ro">ROMÂNĂ</button><button type="button" data-l="en">ENGLISH</button></div>
+  </div>
+  <div id="beginView" role="button" tabindex="0" aria-label="Begin">
+    <div class="a" id="gateA">find a quiet corner<br>and take your time</div>
+    <div class="b" id="gateB">[ TAP TO BEGIN ]</div>
+  </div>
+</div>

@@ -1,0 +1,148 @@
+/* Global styles of the game (the markup lives in src/app/app.html, the logic in public/game/game.js) */
+:root{--ink:#ececec;--dim:#8c8c8c;--faint:#5a5a5a;--px:'Press Start 2P',ui-monospace,monospace;--txt:'Pixelify Sans','Press Start 2P',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#000;color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+body{font-family:var(--txt)}
+button{font:inherit;color:inherit}
+
+/* ---- artwork: stage image + live overlays ---- */
+#art{position:fixed;inset:0;overflow:hidden;opacity:0;transition:opacity 3.2s ease-in}
+#art.on{opacity:1}
+#imgs{position:absolute;filter:brightness(.1);-webkit-mask-image:linear-gradient(to right,transparent 0,#000 7%,#000 93%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 7%,#000 93%,transparent 100%)}
+#imgs img,#imgs canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+#dis{display:none}
+#fx{position:absolute;image-rendering:pixelated;pointer-events:none}
+#clk{position:absolute;pointer-events:none}
+#gift{position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none;filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}
+#gift.show{display:block}
+#gift.ready{cursor:pointer}
+#gift:focus-visible{outline:2px dashed var(--ink);outline-offset:6px}
+#gift img{position:absolute;display:block;pointer-events:none}
+#giftBody{left:0;top:0;width:100%}
+#giftLid{transform-origin:50% 100%}
+#heartWrap{position:absolute;inset:0;pointer-events:none}
+#heart{opacity:0}
+#giftSh{position:absolute;display:none;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}
+#giftSh.show{display:block}
+#giftHint{position:absolute;display:none;pointer-events:none;transform:translateX(-50%);white-space:nowrap;font-family:var(--px);font-size:9px;letter-spacing:.14em;color:#ffe2a8;text-shadow:0 0 8px rgba(255,170,60,.8);animation:blink 1.1s steps(2) infinite}
+#giftHint.show{display:block}
+#gift.drop{animation:gdrop 1s cubic-bezier(.3,.7,.4,1) both}
+#gift.idle{animation:gglow 3.2s ease-in-out infinite}
+#gift.nudge{animation:gnudge .45s linear}
+#gift.open{animation:none}
+#gift.open #giftLid{animation:lidoff 1.25s cubic-bezier(.5,0,.8,.5) forwards}
+#gift.open #heart{animation:heartup 1.7s cubic-bezier(.2,.8,.3,1) .75s both,heartfloat 3.4s ease-in-out 2.45s infinite}
+#gift.opened #giftLid{display:none}
+#gift.opened #heart{opacity:1;animation:heartfloat 3.4s ease-in-out infinite}
+@keyframes gdrop{0%{transform:translateY(-170%);opacity:0}40%{opacity:1}62%{transform:translateY(0)}78%{transform:translateY(-9%)}90%{transform:translateY(0)}100%{transform:translateY(0);opacity:1}}
+@keyframes gglow{0%,100%{filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}50%{filter:drop-shadow(0 0 20px rgba(255,175,70,.7))}}
+@keyframes gnudge{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px) rotate(-1.5deg)}50%{transform:translateX(4px) rotate(1.5deg)}80%{transform:translateX(-2px)}}
+@keyframes lidoff{0%{transform:none;opacity:1}16%{transform:translateY(-6%) rotate(-1.5deg)}100%{transform:translate(48%,-78%) rotate(28deg);opacity:0}}
+@keyframes heartup{0%{opacity:0;transform:translateY(60%) scale(.45)}10%{opacity:1}100%{opacity:1;transform:translateY(-250%) scale(1)}}
+@keyframes heartfloat{0%,100%{transform:translateY(-250%) scale(1)}50%{transform:translateY(-264%) scale(1.07)}}
+#flash{position:fixed;inset:0;background:#ffe2a8;opacity:0;pointer-events:none;z-index:15;transition:opacity .4s}
+#crt{position:fixed;inset:0;pointer-events:none;z-index:2;
+  background:
+    repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.07) 3px),
+    radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 62%,rgba(0,0,0,.75) 100%)}
+
+/* gate */
+#gate{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;cursor:pointer;transition:opacity 1.4s;text-align:center;padding:24px}
+#gate.hide{opacity:0;pointer-events:none}
+#gate #langView,#gate #beginView{display:flex;flex-direction:column;align-items:center;gap:30px}
+#gate.pick #beginView{display:none}#gate:not(.pick) #langView{display:none}#gate:not(.pick){cursor:pointer}#gate.pick{cursor:default}
+#gate .langs{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+#gate .langs button{font-family:var(--px);font-size:12px;letter-spacing:.1em;color:var(--ink);background:none;border:0;padding:14px 16px;cursor:pointer;box-shadow:0 0 0 3px var(--faint)}
+#gate .langs button[data-l=ro]{font-family:'Pixelify Sans','Press Start 2P',monospace;font-size:15px;font-weight:600}
+#gate .langs button:hover,#gate .langs button:focus{background:var(--ink);color:#000;outline:none;box-shadow:0 0 0 3px var(--ink)}
+#gate .a{font-family:var(--px);font-size:10px;color:var(--faint);letter-spacing:.1em;line-height:1.8}
+#gate .b{font-family:var(--px);font-size:12px;color:var(--ink);letter-spacing:.12em;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* stepper:  [cap] frame - ornament - frame - ... - frame [cap]
+   a frame goes  locked ("?" frame, B/W)  ->  revealed (its picture, B/W teaser)  ->  colored (the stop has arrived: filter removed) */
+#stepper{--fs:60px;position:fixed;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;transition:opacity 1.6s;pointer-events:none}
+#stepper.on{opacity:1}
+#steps{display:flex;align-items:flex-start;list-style:none;height:var(--fs)}
+#steps li.step{position:relative;z-index:1;flex:none;height:var(--fs)}
+#steps .frame{display:block;width:auto;filter:grayscale(1) brightness(.7);transition:filter 1.8s ease}
+#steps li.revealed .frame{filter:grayscale(1)}
+#steps li.colored .frame{filter:none}
+#steps .link{display:block;flex:none;width:auto;filter:grayscale(1) brightness(.7);transition:filter 1.8s ease;margin-left:calc(var(--fs)*-.03);margin-right:calc(var(--fs)*-.03)}
+#steps .link.colored{filter:none}
+#steps .pixelated{image-rendering:pixelated}
+#steps li.pop .frame{animation:sreveal .8s steps(8)}
+#steps li.bloom .frame,#steps .link.bloom{animation:sbloom 1.9s ease-out}
+@keyframes sreveal{0%{opacity:0;transform:scale(.7)}50%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes sbloom{0%{filter:grayscale(1) brightness(1.7)}35%{filter:grayscale(0) brightness(1.45) drop-shadow(0 0 12px rgba(255,214,102,.95))}100%{filter:none}}
+#steplbl{font-family:var(--px);font-size:8px;color:var(--dim);letter-spacing:.14em;white-space:nowrap}
+#steplbl:empty{display:none}
+#steps .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;font-family:var(--px);font-size:7px;letter-spacing:.06em;white-space:nowrap;color:var(--faint);transition:color 1.4s}
+#steps li.revealed .cap{color:var(--dim)}
+#steps li.colored .cap{color:#e0c88a}
+@media (max-width:699px){#steps .cap{display:none}}
+@media (min-width:700px){#steps{margin-bottom:16px}}
+
+/* clock overlay (hit-area + caption, positioned over the clock in the picture) */
+#mute{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:8;width:38px;height:38px;padding:8px;
+  color:var(--ink);background:rgba(0,0,0,.6);border:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.6s,background .2s,color .2s}
+#mute.on.has{opacity:.7;pointer-events:auto}
+#mute.on.has:hover,#mute.on.has:focus-visible{opacity:1;background:var(--ink);color:#000;outline:none}
+#mute svg{width:100%;height:100%;display:block}
+#mute .x{display:none}#mute.off .w{display:none}#mute.off .x{display:block}
+#clockUI{position:fixed;z-index:4;opacity:0;transition:opacity 1.6s;pointer-events:none}
+#clockUI.on{opacity:1}
+#clockBtn{position:absolute;inset:0;background:none;border:0;cursor:pointer;pointer-events:auto}
+#clockBtn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* dialog */
+#dialog{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:7;
+  width:min(780px,calc(100vw - 32px));background:rgba(0,0,0,.9);padding:26px 28px 24px;
+  box-shadow:0 -4px 0 0 var(--ink),0 4px 0 0 var(--ink),-4px 0 0 0 var(--ink),4px 0 0 0 var(--ink);
+  opacity:0;pointer-events:none;transition:opacity .7s}
+#dialog.on{opacity:1;pointer-events:auto}
+#tag{position:absolute;top:-15px;left:22px;background:#000;padding:2px 10px;font-family:var(--px);font-size:10px;letter-spacing:.1em;color:var(--ink);display:none}
+#tag.on{display:block}
+#text{font-family:var(--txt);font-size:clamp(17px,2.2vw,23px);line-height:1.5;min-height:3em;white-space:pre-wrap;padding-right:26px}
+#dialog.choosing #text{min-height:0}
+html[lang=ro]{--px:'Pixelify Sans','Press Start 2P',ui-monospace,monospace}
+html[lang=ro] #steps .cap{font-size:10px;letter-spacing:.04em}
+html[lang=ro] #steplbl{font-size:11px;letter-spacing:.08em}
+html[lang=ro] #tag{font-size:13px;letter-spacing:.06em}
+html[lang=ro] #choices button{font-size:15px}
+html[lang=ro] .pxbtn,html[lang=ro] #retry{font-size:13px;letter-spacing:.08em}
+html[lang=ro] #gate .a{font-size:13px}html[lang=ro] #gate .b{font-size:15px}
+html[lang=ro] #giftHint{font-size:12px}
+html[lang=ro] #end h2{font-weight:600}
+html[lang=ru] #text{font-family:var(--px);font-size:clamp(10px,1.3vw,13px);line-height:2;min-height:4.2em}
+#text.narr{color:#b2b2b2}
+#text.voice{color:#fff}
+#text .rest{visibility:hidden}
+#next{position:absolute;right:22px;bottom:22px;width:4px;height:4px;background:var(--ink);opacity:0;animation:blink 1s steps(2) infinite;
+  box-shadow:-8px -4px 0 var(--ink),-4px -4px 0 var(--ink),0 -4px 0 var(--ink),4px -4px 0 var(--ink),8px -4px 0 var(--ink),-4px 0 0 var(--ink),4px 0 0 var(--ink),0 4px 0 var(--ink)}
+#choices{display:none;flex-direction:column;gap:6px;margin-top:16px}
+#choices.on{display:flex}
+@media (min-width:700px){#choices{flex-direction:row;flex-wrap:wrap;gap:6px 18px}}
+#choices button{position:relative;text-align:left;background:none;border:0;cursor:pointer;font-family:var(--px);font-size:12px;line-height:1.5;padding:12px 14px 12px 38px;color:#d6d6d6}
+#choices button::before{content:"";position:absolute;left:14px;top:50%;margin-top:-6px;border:6px solid transparent;border-left:8px solid currentColor;border-right:0;opacity:0}
+#choices button:hover,#choices button:focus{background:var(--ink);color:#000;outline:none}
+#choices button:hover::before,#choices button:focus::before{opacity:1}
+@media (max-height:480px){#dialog{padding:16px 20px 14px;width:min(620px,calc(100vw - 32px))}#text{font-size:15px;min-height:2.6em}#choices{margin-top:8px}#choices button{padding:8px 12px 8px 34px}}
+
+/* end card + remind + keepsake */
+#end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;opacity:0;pointer-events:none;transition:opacity 2.4s}
+#end.on{opacity:1;pointer-events:auto}
+#end h2{font-family:var(--px);font-weight:400;font-size:clamp(18px,4vw,32px);letter-spacing:.25em;margin-right:-.25em}
+#retry{font-family:var(--px);font-size:10px;color:var(--dim);background:none;border:0;padding:12px 16px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 2.4s}
+#retry.on{opacity:1;pointer-events:auto}
+#retry:hover,#retry:focus{color:#000;background:var(--ink);outline:none}
+.pxbtn{font-family:var(--px);font-size:10px;letter-spacing:.14em;color:var(--ink);background:rgba(0,0,0,.78);border:0;padding:14px 18px;cursor:pointer;
+  box-shadow:0 -3px 0 0 var(--faint),0 3px 0 0 var(--faint),-3px 0 0 0 var(--faint),3px 0 0 0 var(--faint)}
+.pxbtn:hover,.pxbtn:focus{background:var(--ink);color:#000;outline:none}
+#remind{position:fixed;left:50%;transform:translateX(-50%);bottom:max(26px,env(safe-area-inset-bottom));z-index:6;opacity:0;pointer-events:none;transition:opacity 1.2s}
+#remind.on{opacity:1;pointer-events:auto}
+#card{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px;opacity:0;pointer-events:none;transition:opacity 1.2s}
+#card.on{opacity:1;pointer-events:auto}
+#cardCv{max-width:min(92vw,520px);max-height:70vh;width:auto;height:auto;image-rendering:pixelated;box-shadow:0 0 0 4px var(--faint)}
+#card .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
