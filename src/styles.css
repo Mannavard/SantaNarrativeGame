@@ -145,4 +145,6 @@ html[lang=ru] #text{font-family:var(--px);font-size:clamp(10px,1.3vw,13px);line-
 #card.on{opacity:1;pointer-events:auto}
 #cardCv{max-width:min(92vw,520px);max-height:70vh;width:auto;height:auto;image-rendering:pixelated;box-shadow:0 0 0 4px var(--faint)}
 #card .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+#cardFeedback{text-decoration:none;text-align:center;max-width:min(92vw,520px);line-height:1.6;background:transparent;box-shadow:0 0 0 2px var(--faint)}
+#cardFeedback[hidden]{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}

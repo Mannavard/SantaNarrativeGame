@@ -16,6 +16,7 @@ const CONFIG={
   stops:['2026-11-23T10:00','2026-11-28T10:00','2026-12-03T10:00','2026-12-08T10:00','2026-12-13T10:00'],
   santaAt:'2026-12-18T10:00',          // the Secret Santa exchange (the finale opens)
   quietSeconds:30,                     // length of the "quiet moment"
+  feedbackUrl:'',                      // optional: a link shown under the keepsake card ("tell the author what you thought"). Empty = hidden.
   // Background music: put the file at public/audio/music.mp3. It starts on the first tap of the start screen
   // (browsers only allow sound after a tap), fades in over fadeIn seconds, loops. No file = no music, no button.
   music:{src:'audio/music.mp3',volume:.35,fadeIn:6},
@@ -144,7 +145,7 @@ en:{
  finThesis:'Time is the one thing nobody can wrap.\nA gift is just a reason to spend it on someone.',
  finTake:'Take this with you. Ask the questions again, sometime.',merry:'Merry everything.',
  cardTitle:'YOUR DECEMBER',cardSub:'FIVE QUESTIONS WORTH ASKING AGAIN',cardFrom:d=>`FROM YOUR SECRET SANTA · ${d.toUpperCase()}`,
- cardSave:'SAVE THE CARD',cardClose:'CLOSE',cardAgain:'↻ OPEN THE CARD AGAIN',
+ cardSave:'SAVE THE CARD',cardClose:'CLOSE',cardAgain:'↻ OPEN THE CARD AGAIN',cardFeedback:'TELL THE AUTHOR WHAT YOU THOUGHT >',
  endTitle:'THE END?',retry:'↻ CHANGE YOUR MIND',
  dec1:['I see. It happens.','Deadlines, calls, tickets… all very important.',"But adventure doesn't knock twice.\nYou missed yours.","And that's how life goes — in a rush, between tasks, past the most interesting things. Tra-la-la.","You'll still get a gift. But it will be just a gift.",'The lamp flickers. Once. Twice.','And goes out.'],
  dec2:['As you wish. The road will wait.','The lamp flickers… and goes out.'],
@@ -216,7 +217,7 @@ ru:{
  finThesis:'Время — единственное, что нельзя упаковать.\nПодарок — просто повод потратить его на кого-то.',
  finTake:'Возьми это с собой. Когда-нибудь задай эти вопросы снова.',merry:'Счастливых праздников.',
  cardTitle:'ТВОЙ ДЕКАБРЬ',cardSub:'ПЯТЬ ВОПРОСОВ, КОТОРЫЕ СТОИТ ЗАДАТЬ СНОВА',cardFrom:d=>`ОТ ТВОЕГО ТАЙНОГО САНТЫ · ${d.toUpperCase()}`,
- cardSave:'СОХРАНИТЬ КАРТОЧКУ',cardClose:'ЗАКРЫТЬ',cardAgain:'↻ ОТКРЫТЬ КАРТОЧКУ СНОВА',
+ cardSave:'СОХРАНИТЬ КАРТОЧКУ',cardClose:'ЗАКРЫТЬ',cardAgain:'↻ ОТКРЫТЬ КАРТОЧКУ СНОВА',cardFeedback:'НАПИСАТЬ АВТОРУ, ЧТО ДУМАЕШЬ >',
  endTitle:'КОНЕЦ?',retry:'↻ ПЕРЕДУМАТЬ',
  dec1:['Понятно. Бывает.','Дедлайны, созвоны, тикеты… всё очень важно.','Но приключение не стучится дважды.\nСвоё — упущено.','Так и жизнь проходит — в спешке, между задачами, мимо самого интересного. Тра-ля-ля.','Подарок ты всё равно получишь. Но это будет просто подарок.','Фонарь мигает. Раз. Другой.','И гаснет.'],
  dec2:['Как скажешь. Дорога подождёт.','Фонарь мигает… и гаснет.'],
@@ -288,7 +289,7 @@ ro:{
  finThesis:'Timpul e singurul lucru pe care nu-l poate împacheta nimeni.\nUn cadou e doar un motiv de a-l petrece cu cineva.',
  finTake:'Ia asta cu tine. Pune din nou aceste întrebări, cândva.',merry:'Sărbători fericite.',
  cardTitle:'DECEMBRIE AL TĂU',cardSub:'CINCI ÎNTREBĂRI CARE MERITĂ PUSE DIN NOU',cardFrom:d=>`DE LA MOȘUL TĂU SECRET · ${d.toUpperCase()}`,
- cardSave:'SALVEAZĂ FELICITAREA',cardClose:'ÎNCHIDE',cardAgain:'↻ DESCHIDE FELICITAREA DIN NOU',
+ cardSave:'SALVEAZĂ FELICITAREA',cardClose:'ÎNCHIDE',cardAgain:'↻ DESCHIDE FELICITAREA DIN NOU',cardFeedback:'SPUNE-I AUTORULUI CE GÂNDEȘTI >',
  endTitle:'SFÂRȘIT?',retry:'↻ M-AM RĂZGÂNDIT',
  dec1:['Înțeleg. Se întâmplă.','Deadline-uri, apeluri, tichete… toate foarte importante.','Dar aventura nu bate de două ori la ușă.\nPe a ta ai pierdut-o.','Așa trece viața — în grabă, între sarcini, pe lângă cele mai interesante lucruri. Tra-la-la.','Cadoul tot îl vei primi. Dar va fi doar un cadou.','Felinarul pâlpâie. O dată. A doua oară.','Și se stinge.'],
  dec2:['Cum vrei. Drumul va aștepta.','Felinarul pâlpâie… și se stinge.'],
@@ -508,7 +509,7 @@ function drawClock(){
   if(unitsRoom){const f=fitFont(st.units,w-2*pad,[6,5]);c.font=uiFont(f);c.textAlign='center';c.fillStyle=hexA(lit,.55);c.fillText(st.units,w/2,Math.round(h-pad-1))}
 }
 /* ---- the mouse as wind: sweeping over the window blows the snow away and stirs it up (see frame) ---- */
-const WIND_R=95;                                          // reach of the gust, in logical px of the picture
+const WIND_R=110;                                         // reach of the gust, in logical px of the picture
 const wind={x:0,y:0,vx:0,vy:0,on:false,t:0};
 let steam=[],steamAcc=0;
 addEventListener('pointermove',e=>{
@@ -551,7 +552,7 @@ function frame(ts){
     if(windOn){
       const dx=f.x-wind.x,dy=f.y-wind.y,r2=dx*dx+dy*dy;
       if(r2<WR*WR){
-        const r=Math.sqrt(r2)+.01,w=(1-r/WR)*(1-r/WR),A=Math.min(wsp,700)*.55*(1.3-.6*f.z)*w*dt,
+        const r=Math.sqrt(r2)+.01,w=1-r/WR,A=Math.min(wsp,700)*1.5*(1.3-.6*f.z)*w*dt,
               side=(wux*dy-wuy*dx)>=0?1:-1;                  // which side of the path the flake is on: the two sides swirl in opposite directions
         f.vx+=A*(.9*dx/r+.55*wux-.9*side*dy/r);
         f.vy+=A*(.9*dy/r+.55*wuy+.9*side*dx/r);
@@ -945,6 +946,7 @@ function applyStatic(){
   $('#gateA').innerHTML=T('gateA');$('#gateB').textContent=T('gateB');
   $('#endH').textContent=T('endTitle');retry.textContent=T('retry');
   $('#cardSave').textContent=T('cardSave');$('#cardClose').textContent=T('cardClose');
+  const fb=$('#cardFeedback');fb.textContent=T('cardFeedback');fb.hidden=!CONFIG.feedbackUrl;if(CONFIG.feedbackUrl)fb.href=CONFIG.feedbackUrl;
   remindBtn.textContent=remindIsCard?T('cardAgain'):T('remindBtn');
   giftHint.textContent=T('tapBox');clockBtnEl.title=clockBtnEl.ariaLabel=T('clockTip');
   muteBtn.title=muteBtn.ariaLabel=T('muteTip');
