@@ -23,6 +23,7 @@ All the text the player reads is in the `TX` dictionary (`en`, `ru`, `ro`) in th
 ## Pictures (`public/img/`)
 All stage pictures are one 1536x1024 frame. Helper scripts (Python 3 + `pip install pillow`):
 - Stage picture:  `python3 tools/normalize.py --start 4 path/to/picture.webp`  → `public/img/stage4.webp`, then add its line to `CONFIG.stages`.
+- Phone (portrait) pictures: `python3 tools/normalize_portrait.py 1:art/portrait-1-start.png:731.5:1405.5:181 …`  (stage : file : clock-digits centre x : y : width) → `public/img/stageN-portrait.webp`; their lamp / mug / glass / masks are the `p:` block of each stage in `CONFIG.stages`.
 - Progress-bar sheet (6 frames + 5 ornaments):  `python3 tools/slice_sheet.py path/to/sheet.webp`  → `public/img/ui/*.png`.
 - Gift from one transparent sheet (box left, lid right):  `python3 tools/split_gift_sheet.py art/gift-sheet-berries.png`  → `public/img/gift-body.png`, `gift-lid.png`.
   Or from two white-background pictures:  `python3 tools/prep_gift.py --body box.webp --lid lid.webp`.

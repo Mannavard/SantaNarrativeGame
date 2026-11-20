@@ -11,6 +11,11 @@ const OCC={
   globe:{circle:[626,664,78]},
   clockBtn:{poly:[[1200,640],[1206,628],[1296,626],[1304,640],[1300,664],[1204,664]]},
 };
+// The same for the PORTRAIT frame (phones), see CONFIG.portrait.
+const OCCP={
+  globeA:{circle:[400,1352,78]},          // the snow globe on stage 4
+  globeB:{circle:[397,1357,74]},          // ... and on stage 5 (it sits slightly differently in that picture)
+};
 const CONFIG={
   // When each stop opens (local time of the visitor). Stops stay open once they have opened.
   stops:['2026-11-23T10:00','2026-11-28T10:00','2026-12-03T10:00','2026-12-08T10:00','2026-12-13T10:00'],
@@ -29,13 +34,14 @@ const CONFIG={
   //   cup   = centre of the mug's rim, where the faint steam starts
   // A stop without its own picture shows the last available one.
   stages:[
-    {src:'img/stage1.webp',cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
-    {src:'img/stage2.webp',cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
-    {src:'img/stage3.webp',cup:[410,663],clock:[1144,680,1378,742],lamp:[1190,248],tilt:.4,occ:[OCC.books,OCC.clockBtn]},
-    {src:'img/stage4.webp',cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn]},
+    // p = the same stage in the portrait frame (phones): its own picture, lamp, mug, clear glass and occluders. Anything not listed is inherited.
+    {src:'img/stage1.webp',p:{src:'img/stage1-portrait.webp',lamp:[719,771],cup:[315,1352],glass:[145,112,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
+    {src:'img/stage2.webp',p:{src:'img/stage2-portrait.webp',lamp:[721,783],cup:[315,1357],glass:[145,118,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
+    {src:'img/stage3.webp',p:{src:'img/stage3-portrait.webp',lamp:[712,802],cup:[243,1366],glass:[100,245,795,1300],occ:[]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1190,248],tilt:.4,occ:[OCC.books,OCC.clockBtn]},
+    {src:'img/stage4.webp',p:{src:'img/stage4-portrait.webp',lamp:[714,723],cup:[220,1360],glass:[115,112,785,1302],occ:[OCCP.globeA]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn]},
     // Stage 5+ are warm-toned, so they carry a colour theme for the live layers:
     //   screen = colour of the clock screen, digit/unlit = lit and unlit segments, glow = lamp glow, tint = snow colour multiplier
-    {src:'img/stage5.webp',cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78]},
+    {src:'img/stage5.webp',p:{src:'img/stage5-portrait.webp',lamp:[710,790],cup:[225,1364],glass:[100,215,792,1298],occ:[OCCP.globeB]},cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78]},
   ],
   // The gift (box + lid cut by tools/prep_gift.py, heart by tools/make_heart.py - swap img/heart.png for the real reveal).
   // Everything is in the 1536x1024 frame / as fractions of the box:  x,y = centre of the box's base on the sill, w = box width;
@@ -56,6 +62,12 @@ const CONFIG={
            colorLines:true,   // the ornaments light up with the frames (false = they stay B/W)
            pixelated:false},  // false for smooth art, true to keep hard pixel edges when scaled
   glass:[250,56,1318,644],             // the clear part of the window, where the live snow falls
+  // PHONES (portrait screens). Its own frame and pictures (tools/normalize_portrait.py aligns them by the clock), everything in that frame's pixels.
+  //   glass = the snow field (the union of every stage's `p.glass`; a stage's own `p.glass` hides the snow outside its window)
+  //   clock/tilt = the clock screen, identical in all five pictures;  gift = where the box stands (x,y,w as in CONFIG.gift)
+  //   fitY = the lowest thing that must stay visible above the dialogue (the bottom of the clock);  dialogMax = room kept for the dialogue, px at most
+  portrait:{w:941,h:1672,glass:[100,112,800,1302],clock:[626,1368,838,1440],tilt:0,
+            gift:{x:545,y:1438,w:110},fitY:1450,dialogMax:225},
 };
 
 
@@ -320,10 +332,12 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
 /* =====================================================================
    ARTWORK
    ===================================================================== */
-const LW=1536,LH=1024;                                   // logical frame of every stage image
+let PORT=false,LW=1536,LH=1024,orientChanged=false;          // logical frame of the stage pictures: 1536x1024 on wide screens, CONFIG.portrait on phones
+/* the stage as it is meant for the current orientation (portrait overrides are merged over the base entry) */
+const stageMeta=i=>{const m=CONFIG.stages[i];if(!m||!PORT)return m;const P=CONFIG.portrait;return {...m,clock:P.clock,tilt:P.tilt,...m.p}};
 const artEl=$('#art'),imgsEl=$('#imgs'),imgA=$('#imgA'),dis=$('#dis'),fx=$('#fx'),fctx=fx.getContext('2d'),clk=$('#clk'),cctx=clk.getContext('2d');
 let box={s:1,left:0,top:0,w:LW,h:LH,P:2},glass={x:0,y:0,w:1,h:1},flakes=[];
-let stageIdx=0,meta=CONFIG.stages[0];
+let stageIdx=0,meta=stageMeta(0);
 let t=0,lampPower=0,lampTarget=0,lampRate=14,flick=1,dip=0,lastBright=-1,dpr=1;
 const imgCache={};
 const loadImg=src=>imgCache[src]||(imgCache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('missing '+src));i.src=src}));
@@ -331,19 +345,21 @@ const stageFor=n=>Math.min(Math.max(n,0),CONFIG.stages.length-1);      // 0 = st
 
 function layout(){
   const vw=innerWidth,vh=innerHeight,portrait=vh>vw*1.1,topInset=Math.ceil($('#stepper').getBoundingClientRect().bottom)+10;
+  if(portrait!==PORT){PORT=portrait;LW=PORT?CONFIG.portrait.w:1536;LH=PORT?CONFIG.portrait.h:1024;orientChanged=true}
   dpr=Math.min(2,window.devicePixelRatio||1);
   let s,left,top;
-  if(portrait){s=vw/(LW*.74);left=-LW*.17*s;                          // phones: crop to the window, lamp and clock (x 17%..91%)
-    top=topInset+Math.max(14,(vh-330-topInset-LH*s*.86)/2)}             // and sit between the stepper and the dialogue
+  if(PORT){const pf=CONFIG.portrait,room=clamp(vh*.27,150,pf.dialogMax);     // phones: the whole window, from under the stepper to just above the dialogue
+    s=Math.max(.05,Math.min(vw/LW,(vh-topInset-16-room)/pf.fitY));left=(vw-LW*s)/2;top=topInset}
   else{s=Math.max(.05,Math.min(vw/LW,(vh-topInset)/LH));left=(vw-LW*s)/2;top=topInset}      // never <=0 (a hidden or zero-height window)
   box={s,left,top,w:LW*s,h:LH*s,P:Math.max(2,Math.round(3*s))};
   imgsEl.style.left=left+'px';imgsEl.style.top=top+'px';imgsEl.style.width=box.w+'px';imgsEl.style.height=box.h+'px';
   fx.style.left=left+'px';fx.style.top=top+'px';fx.style.width=box.w+'px';fx.style.height=box.h+'px';
   fx.width=Math.ceil(box.w/box.P);fx.height=Math.ceil(box.h/box.P);
-  const g=CONFIG.glass,k=s/box.P;glass={x:g[0]*k,y:g[1]*k,w:(g[2]-g[0])*k,h:(g[3]-g[1])*k};
+  const g=PORT?CONFIG.portrait.glass:CONFIG.glass,k=s/box.P;glass={x:g[0]*k,y:g[1]*k,w:(g[2]-g[0])*k,h:(g[3]-g[1])*k};
   flakes=[];const n=Math.round(glass.w*glass.h/105);
   for(let i=0;i<n;i++)flakes.push({x:Math.random()*glass.w,y:Math.random()*glass.h,z:Math.random(),ph:Math.random()*6.28,vx:0,vy:0});
   placeClock();placeGift();
+  if(orientChanged){orientChanged=false;showStage(stageIdx,true)}     // the phone was turned: switch to the other set of pictures
 }
 function placeClock(){
   const c=meta.clock,s=box.s,x=box.left+c[0]*s,y=box.top+c[1]*s,w=(c[2]-c[0])*s,h=(c[3]-c[1])*s;
@@ -376,7 +392,7 @@ const giftReady=CONFIG.gift?Promise.all([CONFIG.gift.body,CONFIG.gift.lid,CONFIG
   giftBody.src=CONFIG.gift.body;giftLid.src=CONFIG.gift.lid;heartEl.src=CONFIG.gift.heart;return giftBody.decode().catch(()=>{}).then(()=>true)}).catch(()=>false):Promise.resolve(false);
 giftBody.onload=()=>placeGift();
 function placeGift(){
-  const g=CONFIG.gift;if(!g)return;const s=box.s,w=g.w*s,h=giftBody.naturalWidth?w*giftBody.naturalHeight/giftBody.naturalWidth:w*.8;
+  const g=CONFIG.gift&&(PORT?{...CONFIG.gift,...CONFIG.portrait.gift}:CONFIG.gift);if(!g)return;const s=box.s,w=g.w*s,h=giftBody.naturalWidth?w*giftBody.naturalHeight/giftBody.naturalWidth:w*.8;
   const left=box.left+g.x*s-w/2,top=box.top+g.y*s-h;
   Object.assign(giftEl.style,{width:w+'px',height:h+'px',left:left+'px',top:top+'px'});
   const lf=g.lidFit;Object.assign(giftLid.style,{width:lf.w*100+'%',left:lf.left*100+'%',top:lf.top*100+'%'});
@@ -422,7 +438,7 @@ async function openGiftBox(){
 const BAY8=(()=>{let m=[[0,2],[3,1]];for(let k=0;k<2;k++){const n=m.length,nm=Array.from({length:n*2},()=>Array(n*2));
   for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=m[y][x]*4;nm[y][x]=v;nm[y][x+n]=v+2;nm[y+n][x]=v+3;nm[y+n][x+n]=v+1}m=nm}return m.flat().map(v=>(v+.5)/64)})();
 async function showStage(idx,instant=false){
-  const m=CONFIG.stages[idx];if(!m)return;
+  const m=stageMeta(idx);if(!m)return;
   const im=await loadImg(m.src).catch(()=>null);if(!im)return;
   if(instant||!imgA.getAttribute('src')){imgA.src=m.src;await imgA.decode().catch(()=>{});stageIdx=idx;meta=m;placeClock();return}
   if(idx===stageIdx)return;
@@ -604,12 +620,14 @@ function frame(ts){
     const gc=(meta.glow||[255,255,255]).join(',');gr.addColorStop(0,`rgba(${gc},${(.22*lp).toFixed(3)})`);gr.addColorStop(1,`rgba(${gc},0)`);c.fillStyle=gr;c.fillRect(lx-LR,ly-LR,LR*2,LR*2);c.globalCompositeOperation='source-over'}
   const sway=Math.sin(t*.35)*6,gx=glass.x,gy=glass.y,gw=glass.w,gh=glass.h;
   stirSnow(dt,k);
+  const sg=meta.glass?meta.glass.map(v=>v*k):null;
   for(const f of flakes){
     f.y+=(10+f.z*22)*dt*(box.s>.5?1:.8);f.x+=(Math.sin(t*.9+f.ph)*(3+f.z*5)+sway*(.4+f.z))*dt;
     if(f.y>=gh){f.y=-2;f.x=Math.random()*gw}
     if(f.x<0)f.x+=gw;else if(f.x>=gw)f.x-=gw;
     if(f.y<0)continue;
     const x=Math.floor(gx+f.x),y=Math.floor(gy+f.y);
+    if(sg&&(x<sg[0]||x>=sg[2]||y<sg[1]||y>=sg[3]))continue;                // outside this stage's own window
     if(occMask&&occMask[y*fx.width+x])continue;
     const dx=x-lx,dy=y-ly,L=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/(LR*1.3))*clamp(lampPower,0,1);
     let i=f.z<.4?4:f.z<.75?5:6;i=Math.min(8,i+Math.round(L*3));
@@ -1077,6 +1095,6 @@ if(QS.has('debug')){gate.classList.remove('pick');setTimeout(start,50)}
 layout();
 let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{fitStepper();renderStepper();layout()},150)});
 // warm the cache so the first dissolve is instant
-CONFIG.stages.forEach(s=>loadImg(s.src).catch(()=>{}));
+CONFIG.stages.forEach((_,i)=>loadImg(stageMeta(i).src).catch(()=>{}));
 requestAnimationFrame(frame);
 })();
