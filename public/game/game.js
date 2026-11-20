@@ -103,7 +103,7 @@ en:{
  intro:[
   ['Evening. The snow has been falling for so long that the world outside has gone quiet.'],
   ['One lamp is lit in the park. On the windowsill, a clock is ticking. It is the only thing in here that never stops.'],
-  ['You opened a link from your wishlist.\nCuriosity is a good sign.'],
+  ['This page opened from a link.\nCuriosity is a good sign.'],
   ['Hello.','???'],
   ["I'm your Secret Santa. For now, just a voice in the dark.",'???'],
   ["I have a gift for you. It doesn't come in a box.",'SANTA'],
@@ -149,6 +149,7 @@ en:{
  endTitle:'THE END?',retry:'↻ CHANGE YOUR MIND',
  dec1:['I see. It happens.','Deadlines, calls, tickets… all very important.',"But adventure doesn't knock twice.\nYou missed yours.","And that's how life goes — in a rush, between tasks, past the most interesting things. Tra-la-la.","You'll still get a gift. But it will be just a gift.",'The lamp flickers. Once. Twice.','And goes out.'],
  dec2:['As you wish. The road will wait.','The lamp flickers… and goes out.'],
+ dec3:['Looks like this is just a game to you.','Fine. I will wait aside while you play.'],
  backLamp:'The lamp shudders… and lights up again.',back1:'I knew you would come back.',back2:'Stubborn. But fine.',backQ:'So? Shall we go?',
  acc1:'Great. I was hoping you would say yes.',acc1b:'Now it is for real.',
  acc:['The rules are simple. Five stops. One question at each.','There is nothing to type. Nobody is listening, nobody is keeping score. That is the point.',"The questions are for you. Ask them quietly. Answer them honestly. Or don't — it's your road.","Between stops we'll need time, about five days each. A gift doesn't like to be rushed."],
@@ -175,7 +176,7 @@ ru:{
  intro:[
   ['Вечер. Снег идёт так давно, что мир за окном затих.'],
   ['В парке горит один фонарь. На подоконнике тикают часы — единственное, что здесь никогда не останавливается.'],
-  ['Эта страница открылась по ссылке из твоего вишлиста.\nЛюбопытство — хороший знак.'],
+  ['Эта страница открылась по ссылке.\nЛюбопытство — хороший знак.'],
   ['Привет.','???'],
   ['Я — твой Тайный Санта. Пока что просто голос в темноте.','???'],
   ['У меня для тебя подарок. Но он не лежит в коробке.','SANTA'],
@@ -221,6 +222,7 @@ ru:{
  endTitle:'КОНЕЦ?',retry:'↻ ПЕРЕДУМАТЬ',
  dec1:['Понятно. Бывает.','Дедлайны, созвоны, тикеты… всё очень важно.','Но приключение не стучится дважды.\nСвоё — упущено.','Так и жизнь проходит — в спешке, между задачами, мимо самого интересного. Тра-ля-ля.','Подарок ты всё равно получишь. Но это будет просто подарок.','Фонарь мигает. Раз. Другой.','И гаснет.'],
  dec2:['Как скажешь. Дорога подождёт.','Фонарь мигает… и гаснет.'],
+ dec3:['Похоже, для тебя это просто игра.','Хорошо. Я подожду в стороне, пока ты наиграешься.'],
  backLamp:'Фонарь вздрагивает… и загорается снова.',back1:'Я знал, что ты вернёшься.',back2:'Упрямство. Ну ладно.',backQ:'Ну что? Идём?',
  acc1:'Отлично. Я надеялся, что ты согласишься.',acc1b:'Вот теперь — по-настоящему.',
  acc:['Правила простые. Пять остановок. На каждой — один вопрос.','Печатать ничего не нужно. Никто не слушает и никто не ведёт счёт. В этом смысл.','Вопросы — для тебя. Задавай их тихо. Отвечай честно. А можешь и не отвечать — это твоя дорога.','Между остановками нужно время — дней по пять. Подарок не любит спешки.'],
@@ -247,7 +249,7 @@ ro:{
  intro:[
   ['Seară. Ninge de atâta vreme, încât lumea de afară a amuțit.'],
   ['În parc arde un singur felinar. Pe pervaz, un ceas ticăie. E singurul lucru de aici care nu se oprește niciodată.'],
-  ['Pagina s-a deschis dintr-un link din wishlist-ul tău.\nCuriozitatea e un semn bun.'],
+  ['Pagina s-a deschis dintr-un link.\nCuriozitatea e un semn bun.'],
   ['Salut.','???'],
   ['Sunt Moșul tău Secret. Deocamdată, doar o voce în întuneric.','???'],
   ['Am un cadou pentru tine. Dar nu e într-o cutie.','SANTA'],
@@ -293,6 +295,7 @@ ro:{
  endTitle:'SFÂRȘIT?',retry:'↻ M-AM RĂZGÂNDIT',
  dec1:['Înțeleg. Se întâmplă.','Deadline-uri, apeluri, tichete… toate foarte importante.','Dar aventura nu bate de două ori la ușă.\nPe a ta ai pierdut-o.','Așa trece viața — în grabă, între sarcini, pe lângă cele mai interesante lucruri. Tra-la-la.','Cadoul tot îl vei primi. Dar va fi doar un cadou.','Felinarul pâlpâie. O dată. A doua oară.','Și se stinge.'],
  dec2:['Cum vrei. Drumul va aștepta.','Felinarul pâlpâie… și se stinge.'],
+ dec3:['Se pare că, pentru tine, e doar un joc.','Bine. Aștept deoparte cât timp te joci.'],
  backLamp:'Felinarul tresare… și se aprinde din nou.',back1:'Știam că te vei întoarce.',back2:'Încăpățânare. Dar fie.',backQ:'Deci? Mergem?',
  acc1:'Grozav. Speram să spui da.',acc1b:'Acum e pe bune.',
  acc:['Regulile sunt simple. Cinci opriri. La fiecare, o întrebare.','Nu trebuie să scrii nimic. Nimeni nu ascultă, nimeni nu ține scorul. Asta e ideea.','Întrebările sunt pentru tine. Pune-le în liniște. Răspunde sincer. Sau nu — e drumul tău.','Între opriri avem nevoie de timp, cam cinci zile fiecare. Unui cadou nu-i place graba.'],
@@ -888,9 +891,12 @@ function offerCardAgain(){
 let declines=0;
 const endEl=$('#end'),retry=$('#retry');
 async function decline(){
-  const first=declines===1,a=T(first?'dec1':'dec2');
-  await say(first?[...a.slice(0,5).map(t=>L(t,'SANTA')),L(a[5],undefined,lampDyingSeq),L(a[6],undefined,lampOut)]
-                 :[L(a[0],'SANTA'),L(a[1],undefined,()=>{lampDyingSeq().then(lampOut)})]);
+  // 1st: the long ending; 2nd: short and dry; 3rd: "just a game to you" and the lamp goes out in the dark; 4th and on: no words at all
+  if(declines>=4){lampDyingSeq().then(lampOut);dialog.classList.remove('on');await sleep(FAST?500:2800);return}
+  const a=T(declines===1?'dec1':declines===2?'dec2':'dec3');
+  if(declines===1)await say([...a.slice(0,5).map(t=>L(t,'SANTA')),L(a[5],undefined,lampDyingSeq),L(a[6],undefined,lampOut)]);
+  else if(declines===2)await say([L(a[0],'SANTA'),L(a[1],undefined,()=>{lampDyingSeq().then(lampOut)})]);
+  else await say([L(a[0],'SANTA'),L(a[1],'SANTA',()=>{lampDyingSeq().then(lampOut)})]);
   dialog.classList.remove('on');
 }
 function endCard(){
@@ -914,7 +920,8 @@ async function intro(){
     declines++;
     await decline();
     await endCard();
-    await say([L(T('backLamp'),undefined,()=>lampOnSeq()),L(declines>1?T('back2'):T('back1'),'SANTA'),L(T('backQ'),'SANTA')],{hold:true});
+    await say(declines>=3?[L(T('backLamp'),undefined,()=>lampOnSeq()),L(T('backQ'),'SANTA')]
+                         :[L(T('backLamp'),undefined,()=>lampOnSeq()),L(declines>1?T('back2'):T('back1'),'SANTA'),L(T('backQ'),'SANTA')],{hold:true});
   }
 }
 
