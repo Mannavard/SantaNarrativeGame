@@ -13,7 +13,7 @@ The game itself is one self-contained script, `public/game/game.js`; its markup 
 npm install
 npm start            # http://localhost:4200
 ```
-Debug version (jump to any stop, auto-play the whole story): **http://localhost:4200/debug.html** (button `DEBUG` bottom-left, or key `D`).
+Debug panel (jump to any stop, switch language, auto-play the whole story): a **`DEBUG` button is on every screen** while `allowDebug` is true: bottom-left on a computer, under the progress bar on the left on a phone (the key `D` works too). `http://localhost:4200/debug.html` (or `?debug`) also skips the start screen.
 
 ## Edit
 Everything you are likely to change is in the `CONFIG` block at the top of `public/game/game.js`:

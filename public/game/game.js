@@ -956,23 +956,31 @@ async function route(){
 }
 
 /* =====================================================================
-   DEBUG PANEL  (open index.html?debug  or  debug.html)
+   DEBUG PANEL  (a DEBUG button on every screen while CONFIG.allowDebug is true; ?debug or debug.html also skip the start screen)
    ===================================================================== */
 const setNow=ms=>{NOW_OFFSET=ms-Date.now()};
 function dbgJump(){                                    // move the pretend clock to the next date that unlocks something
   if(!state.accepted)return;const u=unlockedCount();
   if(u<5)setNow(stopMs[u]+60000);else if(nowMs()<santaMs)setNow(santaMs+60000);
 }
-if(QS.has('debug')){
+if(CONFIG.allowDebug){
   const st=document.createElement('style');
-  st.textContent=`#dbg{position:fixed;left:8px;bottom:8px;z-index:40;font-family:var(--px);font-size:8px;color:#ddd;max-width:calc(100vw - 16px)}
+  st.textContent=`#dbg{position:fixed;left:8px;bottom:8px;z-index:40;font-family:var(--px);font-size:8px;color:#ddd;max-width:calc(100vw - 16px);display:flex;flex-direction:column}
   #dbg .box{display:none;background:rgba(0,0,0,.95);padding:10px;box-shadow:0 0 0 2px #777;margin-bottom:6px;width:340px;max-width:100%}
   #dbg.open .box{display:block}
   #dbg button{font:inherit;color:#ddd;background:#222;border:0;padding:6px 7px;margin:2px;cursor:pointer;box-shadow:0 0 0 1px #666}
   #dbg button:hover{background:#ddd;color:#000}
   #dbg h4{font-size:8px;color:#888;margin:9px 0 3px;font-weight:400}
   #dbg label{display:inline-block;margin:5px 10px 0 0;cursor:pointer}
-  #dbg .ro{color:#ffd166;line-height:1.7}#dbg .tip{color:#777;line-height:1.7;margin-top:8px}`;
+  #dbg .ro{color:#ffd166;line-height:1.7}#dbg .tip{color:#777;line-height:1.7;margin-top:8px}
+  #dbg button{touch-action:manipulation}
+  @media (max-width:699px){            /* phones: under the progress bar on the left (the sound button is on the right), panel opens downward, big touch targets */
+    #dbg{bottom:auto;top:calc(max(14px,env(safe-area-inset-top)) + 62px);left:max(10px,env(safe-area-inset-left));flex-direction:column-reverse;align-items:flex-start}
+    #dbg .box{margin:6px 0 0;width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 150px);overflow-y:auto;font-size:10px}
+    #dbg button{font-size:10px;padding:10px 11px;margin:3px}
+    #dbg h4,#dbg .ro,#dbg .tip{font-size:9px}
+    #dbg label{font-size:10px;margin:8px 12px 0 0}
+  }`;
   document.head.appendChild(st);
   const root=document.createElement('div');root.id='dbg';
   const box=document.createElement('div');box.className='box';
@@ -990,6 +998,8 @@ if(QS.has('debug')){
   THEMES.forEach((th,i)=>box.appendChild(btn(`${ROM[i]} ${th.toUpperCase()}`,()=>go({accepted:true,done:i,entered:i},stopMs[i]+36e5))));
   box.appendChild(btn('FINALE',()=>go({accepted:true,done:5,entered:5},santaMs+36e5)));
   box.appendChild(btn('AFTER',()=>go({accepted:true,done:5,entered:5,finale:true},santaMs+864e5)));
+  box.appendChild(mk('h4',null,'LANGUAGE'));
+  ['en','ru','ro'].forEach(l=>box.appendChild(btn(l.toUpperCase(),()=>setLang(l))));
   box.appendChild(mk('h4',null,'WHILE PLAYING'));
   box.appendChild(btn('NEXT DATE ⏭',dbgJump));
   box.appendChild(btn('SKIP QUIET MOMENT',()=>{if(quietLeft>0)quietLeft=.001}));
@@ -997,9 +1007,9 @@ if(QS.has('debug')){
   box.appendChild(mk('div'));
   box.appendChild(cb('FAST',()=>FAST,v=>{FAST=v}));
   box.appendChild(cb('AUTO-PLAY (clicks through everything)',()=>DBG.auto,v=>{DBG.auto=v;if(v&&advanceRes)onAdvance()}));
-  box.appendChild(mk('div','tip','Click anywhere to skip a line. AUTO-PLAY says "yes", skips reminders, jumps to the next date by itself, opens the gift and the card.'));
+  box.appendChild(mk('div','tip','Key D opens this panel. Click anywhere to skip a line. AUTO-PLAY says "yes", skips reminders, jumps to the next date by itself, opens the gift and the card.'));
   root.appendChild(box);
-  const tg=btn('DEBUG ▾ (D)',()=>root.classList.toggle('open'));root.appendChild(tg);document.body.appendChild(root);
+  const tg=btn('DEBUG ▾',()=>root.classList.toggle('open'));root.appendChild(tg);document.body.appendChild(root);
   addEventListener('keydown',e=>{if((e.key==='d'||e.key==='D')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName))root.classList.toggle('open')});
   setInterval(()=>{const d=new Date(nowMs());ro.innerHTML=`TIME ${d.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}<br>entered ${state.entered} · done ${state.done}${state.finale?' · finale seen':''}`},400);
 }
