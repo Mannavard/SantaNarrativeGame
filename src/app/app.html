@@ -2,8 +2,9 @@
   <div id="imgs"><img id="imgA" alt=""><canvas id="dis"></canvas></div>
   <canvas id="fx"></canvas>
   <canvas id="clk"></canvas>
-  <div id="giftSh"></div><div id="giftHint">TAP THE BOX</div>
-  <div id="gift" role="button" tabindex="0" aria-label="Open the gift"><img id="giftBody" alt=""><div id="heartWrap"><img id="heart" alt=""></div><img id="giftLid" alt=""></div>
+  <div id="giftLayer"><div id="giftSh"></div>
+  <div id="gift" role="button" tabindex="0" aria-label="Open the gift"><img id="giftBody" alt=""><div id="heartWrap"><img id="heart" alt=""></div><img id="giftLid" alt=""></div></div>
+  <div id="giftHint">TAP THE BOX</div>
 </div>
 <div id="flash"></div>
 <div id="crt"></div>
@@ -29,10 +30,14 @@
   <div id="choices"></div>
   <div id="next"></div>
 </div>
+<div id="quiet" aria-label="Quiet moment">
+  <div id="qQ"></div><div id="qS"></div><div id="qCue"></div>
+  <div class="qbtns"><button id="qReady" class="pxbtn" type="button"></button><button id="qMore" class="pxbtn" type="button"></button></div>
+</div>
 <div class="sr" id="sr" aria-live="polite"></div>
 
-<div id="end"><h2 id="endH">THE END?</h2><button id="retry" type="button">↻ CHANGE YOUR MIND</button></div>
-<button id="remind" class="pxbtn" type="button">↻ REMIND ME TO COME BACK</button>
+<div id="end"><h2 id="endH">THE END?</h2><button id="retry" type="button">CHANGE YOUR MIND</button></div>
+<button id="remind" class="pxbtn" type="button">REMIND ME TO COME BACK</button>
 <div id="card"><canvas id="cardCv" width="900" height="1260"></canvas>
   <div class="row"><button id="cardSave" class="pxbtn" type="button">SAVE THE CARD</button><button id="cardClose" class="pxbtn" type="button">CLOSE</button></div>
   <a id="cardFeedback" class="pxbtn" href="#" target="_blank" rel="noopener" hidden>TELL THE AUTHOR WHAT YOU THOUGHT</a></div>

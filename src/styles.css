@@ -1,8 +1,10 @@
 /* Global styles of the game (the markup lives in src/app/app.html, the logic in public/game/game.js) */
-:root{--ink:#ececec;--dim:#8c8c8c;--faint:#5a5a5a;--px:'Press Start 2P',ui-monospace,monospace;--txt:'Pixelify Sans','Press Start 2P',ui-monospace,monospace}
+:root{--ink:#ececec;--dim:#8c8c8c;--faint:#5a5a5a;--px:'Handjet',ui-monospace,monospace;--txt:'Handjet',ui-monospace,monospace}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#000;color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-body{font-family:var(--txt)}
+body{font-family:var(--txt);font-weight:500}
+/* small UI texts a bit bolder than the dialogue text: Handjet is thin */
+#giftHint,#gate .langs button,#gate .a,#gate .b,#steplbl,#steps .cap,#tag,#choices button,#end h2,#retry,.pxbtn{font-weight:600}
 button{font:inherit;color:inherit}
 
 /* ---- artwork: stage image + live overlays ---- */
@@ -13,7 +15,8 @@ button{font:inherit;color:inherit}
 #dis{display:none}
 #fx{position:absolute;image-rendering:pixelated;pointer-events:none}
 #clk{position:absolute;pointer-events:none}
-#gift{position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none;filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}
+#giftLayer{position:absolute;inset:0;pointer-events:none}      /* dimmed together with the picture (same brightness as #imgs) */
+#gift{--hy:-215%;position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none;filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}
 #gift.show{display:block}
 #gift.ready{cursor:pointer}
 #gift:focus-visible{outline:2px dashed var(--ink);outline-offset:6px}
@@ -24,7 +27,7 @@ button{font:inherit;color:inherit}
 #heart{opacity:0}
 #giftSh{position:absolute;display:none;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}
 #giftSh.show{display:block}
-#giftHint{position:absolute;display:none;pointer-events:none;transform:translateX(-50%);white-space:nowrap;font-family:var(--px);font-size:9px;letter-spacing:.14em;color:#ffe2a8;text-shadow:0 0 8px rgba(255,170,60,.8);animation:blink 1.1s steps(2) infinite}
+#giftHint{position:absolute;display:none;pointer-events:none;transform:translateX(-50%);white-space:nowrap;font-family:var(--px);font-size:21px;letter-spacing:.08em;color:#ffe2a8;text-shadow:0 0 8px rgba(255,170,60,.8);animation:blink 1.1s steps(2) infinite}
 #giftHint.show{display:block}
 #gift.drop{animation:gdrop 1s cubic-bezier(.3,.7,.4,1) both}
 #gift.idle{animation:gglow 3.2s ease-in-out infinite}
@@ -32,14 +35,18 @@ button{font:inherit;color:inherit}
 #gift.open{animation:none}
 #gift.open #giftLid{animation:lidoff 1.25s cubic-bezier(.5,0,.8,.5) forwards}
 #gift.open #heart{animation:heartup 1.7s cubic-bezier(.2,.8,.3,1) .75s both,heartfloat 3.4s ease-in-out 2.45s infinite}
+#gift.wait #giftLid,#gift.rise #giftLid{display:none}
+#gift.wait #heart{opacity:0}
+#gift.rise #heart{animation:heartrise var(--rise,4s) cubic-bezier(.45,.05,.3,1) both,heartfloat 3.4s ease-in-out var(--rise,4s) infinite}
 #gift.opened #giftLid{display:none}
 #gift.opened #heart{opacity:1;animation:heartfloat 3.4s ease-in-out infinite}
 @keyframes gdrop{0%{transform:translateY(-170%);opacity:0}40%{opacity:1}62%{transform:translateY(0)}78%{transform:translateY(-9%)}90%{transform:translateY(0)}100%{transform:translateY(0);opacity:1}}
 @keyframes gglow{0%,100%{filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}50%{filter:drop-shadow(0 0 20px rgba(255,175,70,.7))}}
 @keyframes gnudge{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px) rotate(-1.5deg)}50%{transform:translateX(4px) rotate(1.5deg)}80%{transform:translateX(-2px)}}
+@keyframes heartrise{0%{opacity:0;transform:translateY(60%) scale(.45)}12%{opacity:1}100%{opacity:1;transform:translateY(var(--hy)) scale(1)}}
 @keyframes lidoff{0%{transform:none;opacity:1}16%{transform:translateY(-6%) rotate(-1.5deg)}100%{transform:translate(48%,-78%) rotate(28deg);opacity:0}}
-@keyframes heartup{0%{opacity:0;transform:translateY(60%) scale(.45)}10%{opacity:1}100%{opacity:1;transform:translateY(-250%) scale(1)}}
-@keyframes heartfloat{0%,100%{transform:translateY(-250%) scale(1)}50%{transform:translateY(-264%) scale(1.07)}}
+@keyframes heartup{0%{opacity:0;transform:translateY(60%) scale(.45)}10%{opacity:1}100%{opacity:1;transform:translateY(var(--hy)) scale(1)}}
+@keyframes heartfloat{0%,100%{transform:translateY(var(--hy)) scale(1)}50%{transform:translateY(calc(var(--hy) - 14%)) scale(1.07)}}
 #flash{position:fixed;inset:0;background:#ffe2a8;opacity:0;pointer-events:none;z-index:15;transition:opacity .4s}
 #crt{position:fixed;inset:0;pointer-events:none;z-index:2;
   background:
@@ -52,11 +59,10 @@ button{font:inherit;color:inherit}
 #gate #langView,#gate #beginView{display:flex;flex-direction:column;align-items:center;gap:30px}
 #gate.pick #beginView{display:none}#gate:not(.pick) #langView{display:none}#gate:not(.pick){cursor:pointer}#gate.pick{cursor:default}
 #gate .langs{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
-#gate .langs button{font-family:var(--px);font-size:12px;letter-spacing:.1em;color:var(--ink);background:none;border:0;padding:14px 16px;cursor:pointer;box-shadow:0 0 0 3px var(--faint)}
-#gate .langs button[data-l=ro]{font-family:'Pixelify Sans','Press Start 2P',monospace;font-size:15px;font-weight:600}
+#gate .langs button{font-family:var(--px);font-size:28px;letter-spacing:.06em;color:var(--ink);background:none;border:0;padding:12px 16px;cursor:pointer;box-shadow:0 0 0 3px var(--faint)}
 #gate .langs button:hover,#gate .langs button:focus{background:var(--ink);color:#000;outline:none;box-shadow:0 0 0 3px var(--ink)}
-#gate .a{font-family:var(--px);font-size:10px;color:var(--faint);letter-spacing:.1em;line-height:1.8}
-#gate .b{font-family:var(--px);font-size:12px;color:var(--ink);letter-spacing:.12em;animation:blink 1.2s steps(2) infinite}
+#gate .a{font-family:var(--px);font-size:23px;color:var(--faint);letter-spacing:.06em;line-height:1.5}
+#gate .b{font-family:var(--px);font-size:28px;color:var(--ink);letter-spacing:.08em;animation:blink 1.2s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 
 /* stepper:  [cap] frame - ornament - frame - ... - frame [cap]
@@ -75,9 +81,9 @@ button{font:inherit;color:inherit}
 #steps li.bloom .frame,#steps .link.bloom{animation:sbloom 1.9s ease-out}
 @keyframes sreveal{0%{opacity:0;transform:scale(.7)}50%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes sbloom{0%{filter:grayscale(1) brightness(1.7)}35%{filter:grayscale(0) brightness(1.45) drop-shadow(0 0 12px rgba(255,214,102,.95))}100%{filter:none}}
-#steplbl{font-family:var(--px);font-size:8px;color:var(--dim);letter-spacing:.14em;white-space:nowrap}
+#steplbl{font-family:var(--px);font-size:19px;color:var(--dim);letter-spacing:.08em;white-space:nowrap}
 #steplbl:empty{display:none}
-#steps .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;font-family:var(--px);font-size:7px;letter-spacing:.06em;white-space:nowrap;color:var(--faint);transition:color 1.4s}
+#steps .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;font-family:var(--px);font-size:16px;letter-spacing:.04em;white-space:nowrap;color:var(--faint);transition:color 1.4s}
 #steps li.revealed .cap{color:var(--dim)}
 #steps li.colored .cap{color:#e0c88a}
 @media (max-width:699px){#steps .cap{display:none}}
@@ -102,20 +108,13 @@ button{font:inherit;color:inherit}
   box-shadow:0 -4px 0 0 var(--ink),0 4px 0 0 var(--ink),-4px 0 0 0 var(--ink),4px 0 0 0 var(--ink);
   opacity:0;pointer-events:none;transition:opacity .7s}
 #dialog.on{opacity:1;pointer-events:auto}
-#tag{position:absolute;top:-15px;left:22px;background:#000;padding:2px 10px;font-family:var(--px);font-size:10px;letter-spacing:.1em;color:var(--ink);display:none}
+#tag{position:absolute;top:-2px;transform:translateY(-50%);left:22px;background:#000;padding:4px 12px 3px;line-height:1;font-family:var(--px);font-size:23px;letter-spacing:.06em;color:var(--ink);display:none}
 #tag.on{display:block}
-#text{font-family:var(--txt);font-size:clamp(17px,2.2vw,23px);line-height:1.5;min-height:3em;white-space:pre-wrap;padding-right:26px}
+#text{font-family:var(--txt);font-size:clamp(26px,3.2vw,34px);line-height:1.3;min-height:3em;white-space:pre-wrap;padding-right:26px}
 #dialog.choosing #text{min-height:0}
-html[lang=ro]{--px:'Pixelify Sans','Press Start 2P',ui-monospace,monospace}
-html[lang=ro] #steps .cap{font-size:10px;letter-spacing:.04em}
-html[lang=ro] #steplbl{font-size:11px;letter-spacing:.08em}
-html[lang=ro] #tag{font-size:13px;letter-spacing:.06em}
-html[lang=ro] #choices button{font-size:15px}
-html[lang=ro] .pxbtn,html[lang=ro] #retry{font-size:13px;letter-spacing:.08em}
-html[lang=ro] #gate .a{font-size:13px}html[lang=ro] #gate .b{font-size:15px}
-html[lang=ro] #giftHint{font-size:12px}
-html[lang=ro] #end h2{font-weight:600}
-html[lang=ru] #text{font-family:var(--px);font-size:clamp(10px,1.3vw,13px);line-height:2;min-height:4.2em}
+#dialog.q #text{font-size:clamp(30px,4vw,44px);line-height:1.15;min-height:3.4em}
+#dialog.q.choosing #text{min-height:0}
+@media (max-width:699px){#dialog.q #text{font-size:25px;line-height:1.12;min-height:0}#dialog.q{padding-top:22px;padding-bottom:12px}#dialog.q #choices{margin-top:6px}}
 #text.narr{color:#b2b2b2}
 #text.voice{color:#fff}
 #text .rest{visibility:hidden}
@@ -124,20 +123,32 @@ html[lang=ru] #text{font-family:var(--px);font-size:clamp(10px,1.3vw,13px);line-
 #choices{display:none;flex-direction:column;gap:6px;margin-top:16px}
 #choices.on{display:flex}
 @media (min-width:700px){#choices{flex-direction:row;flex-wrap:wrap;gap:6px 18px}}
-#choices button{position:relative;text-align:left;background:none;border:0;cursor:pointer;font-family:var(--px);font-size:12px;line-height:1.5;padding:12px 14px 12px 38px;color:#d6d6d6}
+#choices button{position:relative;text-align:left;background:none;border:0;cursor:pointer;font-family:var(--px);font-size:27px;line-height:1.2;padding:10px 14px 10px 38px;color:#d6d6d6}
 #choices button::before{content:"";position:absolute;left:14px;top:50%;margin-top:-6px;border:6px solid transparent;border-left:8px solid currentColor;border-right:0;opacity:0}
 #choices button:hover,#choices button:focus{background:var(--ink);color:#000;outline:none}
 #choices button:hover::before,#choices button:focus::before{opacity:1}
-@media (max-height:480px){#dialog{padding:16px 20px 14px;width:min(620px,calc(100vw - 32px))}#text{font-size:15px;min-height:2.6em}#choices{margin-top:8px}#choices button{padding:8px 12px 8px 34px}}
+@media (max-height:480px){#dialog{padding:16px 20px 14px;width:min(620px,calc(100vw - 32px))}#text{font-size:21px;min-height:2.6em}#choices{margin-top:8px}#choices button{padding:8px 12px 8px 34px}}
+
+/* the pause for thinking: the question stays as a quiet caption, a sentence starter fades in, buttons come later */
+#quiet{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:7;width:min(780px,calc(100vw - 32px));padding:6px 8px;text-align:center;opacity:0;pointer-events:none;transition:opacity 1.4s}
+#quiet.on{opacity:1}
+#qQ{font-size:clamp(20px,2.4vw,28px);line-height:1.2;color:#8c8c8c}
+#qS{margin-top:12px;min-height:1.2em;font-size:clamp(26px,3.4vw,38px);line-height:1.15;color:#ece1c3;opacity:0;transition:opacity .7s}
+#qCue{margin-top:6px;min-height:1.2em;font-size:clamp(20px,2.4vw,26px);color:#b2b2b2;opacity:0;transition:opacity .7s}
+#qS.on,#qCue.on{opacity:1}
+.qbtns{display:flex;gap:14px;justify-content:center;margin-top:12px;min-height:50px}
+.qbtns button{opacity:0;pointer-events:none;transition:opacity .8s}
+.qbtns button.on{opacity:1;pointer-events:auto}
+@media (max-height:480px),(max-width:699px){.qbtns{min-height:42px;margin-top:8px}.qbtns .pxbtn{padding:8px 14px;font-size:20px}#qS{margin-top:8px}}
 
 /* end card + remind + keepsake */
 #end{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;opacity:0;pointer-events:none;transition:opacity 2.4s}
 #end.on{opacity:1;pointer-events:auto}
-#end h2{font-family:var(--px);font-weight:400;font-size:clamp(18px,4vw,32px);letter-spacing:.25em;margin-right:-.25em}
-#retry{font-family:var(--px);font-size:10px;color:var(--dim);background:none;border:0;padding:12px 16px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 2.4s}
+#end h2{font-family:var(--px);font-weight:600;font-size:clamp(42px,8vw,74px);letter-spacing:.22em;margin-right:-.22em}
+#retry{font-family:var(--px);font-size:24px;color:var(--dim);background:none;border:0;padding:12px 16px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 2.4s}
 #retry.on{opacity:1;pointer-events:auto}
 #retry:hover,#retry:focus{color:#000;background:var(--ink);outline:none}
-.pxbtn{font-family:var(--px);font-size:10px;letter-spacing:.14em;color:var(--ink);background:rgba(0,0,0,.78);border:0;padding:14px 18px;cursor:pointer;
+.pxbtn{font-family:var(--px);font-size:24px;letter-spacing:.08em;color:var(--ink);background:rgba(0,0,0,.78);border:0;padding:14px 18px;cursor:pointer;
   box-shadow:0 -3px 0 0 var(--faint),0 3px 0 0 var(--faint),-3px 0 0 0 var(--faint),3px 0 0 0 var(--faint)}
 .pxbtn:hover,.pxbtn:focus{background:var(--ink);color:#000;outline:none}
 #remind{position:fixed;left:50%;transform:translateX(-50%);bottom:max(26px,env(safe-area-inset-bottom));z-index:6;opacity:0;pointer-events:none;transition:opacity 1.2s}

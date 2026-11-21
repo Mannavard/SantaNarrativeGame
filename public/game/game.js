@@ -18,9 +18,12 @@ const OCCP={
 };
 const CONFIG={
   // When each stop opens (local time of the visitor). Stops stay open once they have opened.
-  stops:['2026-11-23T10:00','2026-11-28T10:00','2026-12-03T10:00','2026-12-08T10:00','2026-12-13T10:00'],
-  santaAt:'2026-12-18T10:00',          // the Secret Santa exchange (the finale opens)
-  quietSeconds:30,                     // length of the "quiet moment"
+  // Stop I opens right after the player says "yes" (so its date is in the past on purpose); the others open on their dates.
+  stops:['2000-01-01T00:00','2026-12-15T10:00','2026-12-16T10:00','2026-12-17T10:00','2026-12-18T10:00'],     // Mon (stop I: right after "yes") .. Fri
+  santaAt:'2026-12-18T16:00',          // the Secret Santa exchange (the finale opens) - PLACEHOLDER time, set the real one
+  quietSeconds:45,                     // length of the "quiet moment" (the pause for thinking)
+  quietReadyAfter:20,                  // after this many seconds an "I am ready" button appears
+  quietExtra:30,                       // the "thirty more seconds" button adds this much (shown in the last 10 s)
   feedbackUrl:'',                      // optional: a link shown under the keepsake card ("tell the author what you thought"). Empty = hidden.
   // Background music: put the file at public/audio/music.mp3. It starts on the first tap of the start screen
   // (browsers only allow sound after a tap), fades in over fadeIn seconds, loops. No file = no music, no button.
@@ -50,7 +53,8 @@ const CONFIG={
         x:914,y:796,w:150,
         lidFit:{w:1.06,left:-.03,top:-.55},
         rim:[[.03,.27],[.86,.285],[.98,.13]],
-        heartW:.5,heartTop:.2},
+        heartW:.5,heartTop:.2,
+        riseSeconds:4},                     // after a reload with the box already opened: how long the heart takes to float out (tune to the music's tempo)
   // Progress bar (cut from your sheet by tools/slice_sheet.py):  [cap] frame - ornament - frame - ... - frame [cap]
   // The page greys the art with a filter: locked = the "?" frame in B/W, then the stop's picture appears in B/W,
   // then the filter is removed when that stop arrives (and the next frame opens in B/W).
@@ -61,6 +65,7 @@ const CONFIG={
            lineY:.12,         // where the ornaments sit vertically: 0 = centre of the frames, positive = lower
            colorLines:true,   // the ornaments light up with the frames (false = they stay B/W)
            pixelated:false},  // false for smooth art, true to keep hard pixel edges when scaled
+  clockGrow:[0,4,0,5],                 // landscape: the dark screen in the pictures is a bit taller than each stage's `clock` rect; the live clock may use this much more [left, up, right, down] (logical px)
   glass:[250,56,1318,644],             // the clear part of the window, where the live snow falls
   // PHONES (portrait screens). Its own frame and pictures (tools/normalize_portrait.py aligns them by the clock), everything in that frame's pixels.
   //   glass = the snow field (the union of every stage's `p.glass`; a stage's own `p.glass` hides the snow outside its window)
@@ -98,19 +103,13 @@ en:{
  title:'The Journey',
  gateA:'find a quiet corner<br>and take your time',gateB:'[ TAP TO BEGIN ]',
  santa:'SANTA',
- themes:['Now','Warmth','Memory','Loved ones','Giving'],
- questions:[
-  'When did I last lose track of time? What was I doing?',
-  'What is one small thing that reliably makes my day better?',
-  'If I could hang one thing of mine on this tree, what would it be, and why that one?',
-  'Who would I want here right now? What would I thank them for?',
-  'What could I give someone this week that would make them smile? Time counts. A word counts.',
- ],
+ themes:["Time", "Light", "Memory", "Gratitude", "Generosity"],
+ questions:["When did I last lose track of time doing something I love?", "What lights up my life when everything around me is dark?", "Which memory is my most precious Christmas ornament?", "What good thing in my life have I stopped noticing?", "Whom did I once make so happy that I still remember it?"],
  roadNotBegun:"THE ROAD HASN'T BEGUN",firstNear:'THE FIRST MOMENT IS NEAR',allDone:'ALL FIVE MOMENTS DONE',
  stepCount:(th,e)=>`${th.toUpperCase()} · ${e} / 5`,
- cNow:'NOW',cSanta:'UNTIL SANTA',cUntil:th=>`UNTIL ${th.toUpperCase()}`,cQuiet:'QUIET MOMENT',
+ cNow:'NOW',cSanta:'UNTIL SECRET SANTA',cUntil:th=>`UNTIL ${th.toUpperCase()}`,cQuiet:'QUIET MOMENT',
  unitsDHM:'DAYS · HRS · MIN',unitsHMS:'HRS · MIN · SEC',
- clockTip:'Tap to switch: now · until the next moment · until Santa',
+ clockTip:'Tap to switch: now · until the next moment · until Secret Santa',
  muteTip:'Music on / off',
  intro:[
   ['Evening. The snow has been falling for so long that the world outside has gone quiet.'],
@@ -126,21 +125,16 @@ en:{
  yes:"Yes, let's go",no:"No, I'm too busy",
  changed:'Something has changed since you left.',
  arrive:[
-  'Every park starts out empty. So does every December.',
   'Someone has been here. There is a tree now, small and quiet.',
-  'The tree is glowing. There is a snow globe on the sill, and warm lights along the glass.',
+  'The tree is glowing now. Warm little lights run along the windowsill.',
+  'The tree is dressed up. And on the sill there is a snow globe, a tiny winter of its own.',
   'There are people around the tree now. Dancing in the snow, hand in hand. You are not alone out there.',
   'There is a box on the windowsill. It is not for you yet.',
  ],
- ask:q=>`Ask yourself: ${lc(q)}`,
- quietLine:n=>`Nobody is listening. Take a quiet moment with it: ${n} seconds, just you and the clock.`,
- beginQuiet:'Begin the quiet moment',thatMoment:'That moment was yours.',
- after:[
-  'Until the next stop, notice one moment you would want back.',
-  'Do it on purpose, once. Not as a break from life. As life.',
-  'Look at your own shelf this week. Some of it is a story.',
-  'Do not keep it in your head. Tell them. This game can wait.',
- ],
+ starters:[["It was when…"], ["I feel lighter when…"], ["I remember how…"], ["Next to me there is…", "Thank you for…"], ["I remember how I made… happy"]],howTo:"Nobody is listening. There is no right answer: the first thought is the true one.",
+ cues:["What came first?", "And what is behind that?"],qReady:"I am ready",qMore:"Thirty more seconds",
+ reflect:[["You lose track of time exactly when you are truly here.", "Clocks count minutes, but they do not know which of them were yours.", "Today, notice one minute you would want to live again."], ["Everyone has a lantern of their own: a person, a song, a habit. You do not notice it until it gets dark.", "Light does not have to be big. Sometimes it is one window in a stranger's house, or one sentence.", "Do one thing today that lights you up. On purpose."], ["Every ornament on a tree is somebody's story.", "Memory is not an archive. It is what we chose to keep. Choosing a memory, you choose what you are made of.", "Tell that story to someone. A story that is told lives longer."], ["A lot of the good in life does not catch the eye. It is simply there: a warm room, someone's patience, a morning without pain. Habit makes it invisible.", "Gratitude brings it back into view. Not because anyone owes you, but because without it you would be someone else.", "Say \"thank you\" out loud today: to a person, to the world outside the window, or to yourself."], ["There is a quiet joy in making someone feel good. Remember hiding a present and waiting for it to be found? The giver's joy is often quieter, but it lasts longer.", "Giving is one of the few ways to feel needed and strong at once.", "If you feel like it, repeat that feeling today: one small joy for someone, no strings attached. And then the box on the sill, as promised."]],
+ beginQuiet:'Begin the quiet moment',
  afterLast:d=>`That was the last question. See you on ${d}.`,
  remindQ:(l,d)=>`Want a reminder for ${l}? It opens ${d}.`,
  calGoogle:'Google Calendar',calIcs:'Download .ics (Apple / Outlook)',calNo:'No, thanks',
@@ -149,41 +143,35 @@ en:{
  waitFirst:(l,d)=>`The first moment, ${l}, opens ${d}. Until then: the window, the snow, the clock.`,
  waitNext:(l,d)=>`Nothing has changed yet. ${l} opens ${d}.`,
  waitFinale:d=>`All five stops are done. The box on the windowsill opens on ${d}.`,
- remindBtn:'↻ REMIND ME TO COME BACK',
+ remindBtn:'REMIND ME TO COME BACK',
  finDay:'It is the day.',finBox:'The box on the windowsill has been waiting for you.',finOpen:'Go on. Open it.',finNoBox:' (Imagine a box here.)',
  tapBox:'TAP THE BOX',
- finInside:n=>`Inside there is nothing you can hold. Only a heart, and five questions, and the ${n} seconds you gave each of them.`,
+ finInside:()=>`Inside there is nothing you can hold. Only a heart, and five questions, and the time you gave to each of them.`,
  finReal:'And somewhere nearby, a real box is waiting with your name on it.',
  finThesis:'Time is the one thing nobody can wrap.\nA gift is just a reason to spend it on someone.',
  finTake:'Take this with you. Ask the questions again, sometime.',merry:'Merry everything.',
  cardTitle:'YOUR DECEMBER',cardSub:'FIVE QUESTIONS WORTH ASKING AGAIN',cardFrom:d=>`FROM YOUR SECRET SANTA · ${d.toUpperCase()}`,
- cardSave:'SAVE THE CARD',cardClose:'CLOSE',cardAgain:'↻ OPEN THE CARD AGAIN',cardFeedback:'TELL THE AUTHOR WHAT YOU THOUGHT >',
- endTitle:'THE END?',retry:'↻ CHANGE YOUR MIND',
+ cardSave:'SAVE THE CARD',cardClose:'CLOSE',cardAgain:'OPEN THE CARD AGAIN',cardFeedback:'TELL THE AUTHOR WHAT YOU THOUGHT >',
+ endTitle:'THE END?',retry:'CHANGE YOUR MIND',
  dec1:['I see. It happens.','Deadlines, calls, tickets… all very important.',"But adventure doesn't knock twice.\nYou missed yours.","And that's how life goes — in a rush, between tasks, past the most interesting things. Tra-la-la.","You'll still get a gift. But it will be just a gift.",'The lamp flickers. Once. Twice.','And goes out.'],
  dec2:['As you wish. The road will wait.','The lamp flickers… and goes out.'],
  dec3:['Looks like this is just a game to you.','Fine. I will wait aside while you play.'],
  backLamp:'The lamp shudders… and lights up again.',back1:'I knew you would come back.',back2:'Stubborn. But fine.',backQ:'So? Shall we go?',
  acc1:'Great. I was hoping you would say yes.',acc1b:'Now it is for real.',
- acc:['The rules are simple. Five stops. One question at each.','There is nothing to type. Nobody is listening, nobody is keeping score. That is the point.',"The questions are for you. Ask them quietly. Answer them honestly. Or don't — it's your road.","Between stops we'll need time, about five days each. A gift doesn't like to be rushed."],
+ acc:['The rules are simple. Five stops. One question at each.','There is nothing to type. Nobody is listening, nobody is keeping score. That is the point.',"The questions are for you. Ask them quietly. Answer them honestly. Or don't — it's your road.","One stop a day, five in all. A gift doesn't like to be rushed."],
  accLights:'Above the window, five small lights come on. That is your path.',
 },
 ru:{
  title:'Путешествие',
  gateA:'найди тихий уголок<br>и не торопись',gateB:'[ НАЖМИ, ЧТОБЫ НАЧАТЬ ]',
  santa:'САНТА',
- themes:['Сейчас','Тепло','Память','Близкие','Дарить'],
- questions:[
-  'Когда в последний раз время пролетело незаметно? Что тогда занимало меня?',
-  'Какая одна маленькая вещь стабильно делает мой день лучше?',
-  'Если бы на эту ёлку можно было повесить одну мою вещь — что бы это было и почему именно она?',
-  'Кого мне хотелось бы увидеть здесь прямо сейчас? За что я хочу их поблагодарить?',
-  'Что можно подарить кому-то на этой неделе, чтобы человек улыбнулся? Время тоже считается. Слово — тоже.',
- ],
+ themes:["Время", "Свет", "Память", "Благодарность", "Щедрость"],
+ questions:["Когда я в последний раз терял счёт времени, занимаясь тем, что люблю?", "Что в моей жизни зажигает свет, когда вокруг темно?", "Какое воспоминание — моя самая дорогая ёлочная игрушка?", "Что хорошее в моей жизни я давно перестал замечать?", "Кого я когда-то порадовал так, что помню это до сих пор?"],
  roadNotBegun:'ДОРОГА ЕЩЁ НЕ НАЧАЛАСЬ',firstNear:'ПЕРВЫЙ МОМЕНТ БЛИЗКО',allDone:'ВСЕ ПЯТЬ МОМЕНТОВ ПРОЙДЕНЫ',
  stepCount:(th,e)=>`${th.toUpperCase()} · ${e} / 5`,
- cNow:'СЕЙЧАС',cSanta:'ДО САНТЫ',cUntil:th=>`ДО: ${th.toUpperCase()}`,cQuiet:'ТИХИЙ МОМЕНТ',
+ cNow:'СЕЙЧАС',cSanta:'ДО ТАЙНОГО САНТЫ',cUntil:th=>`ДО: ${th.toUpperCase()}`,cQuiet:'ТИХИЙ МОМЕНТ',
  unitsDHM:'ДНИ · ЧАС · МИН',unitsHMS:'ЧАС · МИН · СЕК',
- clockTip:'Нажми, чтобы переключить: сейчас · до следующего момента · до Санты',
+ clockTip:'Нажми, чтобы переключить: сейчас · до следующего момента · до Тайного Санты',
  muteTip:'Музыка: вкл / выкл',
  intro:[
   ['Вечер. Снег идёт так давно, что мир за окном затих.'],
@@ -199,21 +187,16 @@ ru:{
  yes:'Да, пойдём',no:'Нет, мне некогда',
  changed:'Пока тебя не было, кое-что изменилось.',
  arrive:[
-  'Каждый парк сначала пуст. Как и каждый декабрь.',
   'Здесь кто-то побывал. Теперь тут стоит ёлочка — маленькая и тихая.',
-  'Ёлка светится. На подоконнике появился снежный шар, а вдоль стекла — тёплые огоньки.',
+  'Ёлка засветилась. Вдоль подоконника тянутся тёплые огоньки.',
+  'Ёлка нарядная. А на подоконнике появился снежный шар — маленькая зима внутри.',
   'Вокруг ёлки теперь люди. Они танцуют в снегу, взявшись за руки. Одиночества здесь больше нет.',
   'На подоконнике стоит коробка. Пока что она не для тебя.',
  ],
- ask:q=>`Спроси себя: ${lc(q)}`,
- quietLine:n=>`Никто не слушает. Побудь с этим в тишине: ${n} ${secRu(n)}, только ты и часы.`,
- beginQuiet:'Начать тихий момент',thatMoment:'Этот момент был твоим.',
- after:[
-  'До следующей остановки заметь один момент, который захотелось бы вернуть.',
-  'Сделай это нарочно, один раз. Не как передышку от жизни, а как жизнь.',
-  'Загляни на свою полку на этой неделе. Часть вещей на ней — это истории.',
-  'Не держи это в голове. Скажи им. Игра подождёт.',
- ],
+ starters:[["Это было, когда…"], ["Мне светлее, когда…"], ["Я помню, как…"], ["Рядом со мной есть…", "Спасибо за…"], ["Я помню, как порадовал…"]],howTo:"Никто не слушает. Правильного ответа нет: первая мысль и есть настоящая.",
+ cues:["Что пришло первым?", "А что стоит за этим?"],qReady:"Я готов",qMore:"Ещё полминуты",
+ reflect:[["Счёт времени теряешь именно тогда, когда по-настоящему здесь.", "Часы считают минуты, но не знают, какие из них были твоими.", "Заметь сегодня одну минуту, которую захотелось бы повторить."], ["У каждого есть свой фонарь: человек, песня, привычка. Его не замечаешь, пока не стемнеет.", "Свет не обязан быть большим. Иногда это одно окно в чужом доме или одна фраза.", "Сделай сегодня один раз то, что тебя зажигает. Нарочно."], ["На ёлке каждая игрушка — чья-то история.", "Память — не архив, а то, что мы выбрали беречь. Выбирая воспоминание, выбираешь, из чего ты состоишь.", "Расскажи эту историю кому-нибудь. Рассказанное живёт дольше."], ["Многое хорошее не бросается в глаза, оно просто есть: тёплая комната, чьё-то терпение, утро без боли. Привычка делает его невидимым.", "Благодарность возвращает это в поле зрения. Не потому, что кто-то обязан, а потому, что без этого ты был бы другим.", "Скажи «спасибо» вслух сегодня: человеку, миру за окном или себе."], ["Есть тихая радость — сделать кому-то хорошо. Помнишь, как прячешь подарок и ждёшь, когда его найдут? У того, кто дарит, радость часто тише, но длится дольше.", "Отдавать — один из немногих способов почувствовать себя нужным и сильным одновременно.", "Если захочется, повтори это чувство сегодня: одна маленькая радость для кого-то, без расчёта. А потом — коробка на подоконнике, как обещано."]],
+ beginQuiet:'Начать тихий момент',
  afterLast:d=>`Это был последний вопрос. До встречи ${d}.`,
  remindQ:(l,d)=>`Напомнить про ${l}? Откроется ${d}.`,
  calGoogle:'Google Календарь',calIcs:'Скачать .ics (Apple / Outlook)',calNo:'Нет, спасибо',
@@ -222,41 +205,35 @@ ru:{
  waitFirst:(l,d)=>`Первый момент — ${l} — откроется ${d}. А пока: окно, снег, часы.`,
  waitNext:(l,d)=>`Пока ничего не изменилось. ${l} откроется ${d}.`,
  waitFinale:d=>`Все пять остановок пройдены. Коробка на подоконнике откроется ${d}.`,
- remindBtn:'↻ НАПОМНИТЬ ВЕРНУТЬСЯ',
+ remindBtn:'НАПОМНИТЬ ВЕРНУТЬСЯ',
  finDay:'Этот день настал.',finBox:'Коробка на подоконнике ждёт тебя.',finOpen:'Давай. Открой её.',finNoBox:' (Представь здесь коробку.)',
  tapBox:'НАЖМИ НА КОРОБКУ',
- finInside:n=>`Внутри нет ничего, что можно удержать в руках. Только сердце, пять вопросов и ${n} ${secRu(n)}, которые достались каждому из них.`,
+ finInside:()=>`Внутри нет ничего, что можно удержать в руках. Только сердце, пять вопросов и время, которое досталось каждому из них.`,
  finReal:'А где-то рядом ждёт настоящая коробка с твоим именем.',
  finThesis:'Время — единственное, что нельзя упаковать.\nПодарок — просто повод потратить его на кого-то.',
  finTake:'Возьми это с собой. Когда-нибудь задай эти вопросы снова.',merry:'Счастливых праздников.',
  cardTitle:'ТВОЙ ДЕКАБРЬ',cardSub:'ПЯТЬ ВОПРОСОВ, КОТОРЫЕ СТОИТ ЗАДАТЬ СНОВА',cardFrom:d=>`ОТ ТВОЕГО ТАЙНОГО САНТЫ · ${d.toUpperCase()}`,
- cardSave:'СОХРАНИТЬ КАРТОЧКУ',cardClose:'ЗАКРЫТЬ',cardAgain:'↻ ОТКРЫТЬ КАРТОЧКУ СНОВА',cardFeedback:'НАПИСАТЬ АВТОРУ, ЧТО ДУМАЕШЬ >',
- endTitle:'КОНЕЦ?',retry:'↻ ПЕРЕДУМАТЬ',
+ cardSave:'СОХРАНИТЬ КАРТОЧКУ',cardClose:'ЗАКРЫТЬ',cardAgain:'ОТКРЫТЬ КАРТОЧКУ СНОВА',cardFeedback:'НАПИСАТЬ АВТОРУ, ЧТО ДУМАЕШЬ >',
+ endTitle:'КОНЕЦ?',retry:'ПЕРЕДУМАТЬ',
  dec1:['Понятно. Бывает.','Дедлайны, созвоны, тикеты… всё очень важно.','Но приключение не стучится дважды.\nСвоё — упущено.','Так и жизнь проходит — в спешке, между задачами, мимо самого интересного. Тра-ля-ля.','Подарок ты всё равно получишь. Но это будет просто подарок.','Фонарь мигает. Раз. Другой.','И гаснет.'],
  dec2:['Как скажешь. Дорога подождёт.','Фонарь мигает… и гаснет.'],
  dec3:['Похоже, для тебя это просто игра.','Хорошо. Я подожду в стороне, пока ты наиграешься.'],
  backLamp:'Фонарь вздрагивает… и загорается снова.',back1:'Я знал, что ты вернёшься.',back2:'Упрямство. Ну ладно.',backQ:'Ну что? Идём?',
  acc1:'Отлично. Я надеялся, что ты согласишься.',acc1b:'Вот теперь — по-настоящему.',
- acc:['Правила простые. Пять остановок. На каждой — один вопрос.','Печатать ничего не нужно. Никто не слушает и никто не ведёт счёт. В этом смысл.','Вопросы — для тебя. Задавай их тихо. Отвечай честно. А можешь и не отвечать — это твоя дорога.','Между остановками нужно время — дней по пять. Подарок не любит спешки.'],
+ acc:['Правила простые. Пять остановок. На каждой — один вопрос.','Печатать ничего не нужно. Никто не слушает и никто не ведёт счёт. В этом смысл.','Вопросы — для тебя. Задавай их тихо. Отвечай честно. А можешь и не отвечать — это твоя дорога.','Одна остановка в день, всего пять. Подарок не любит спешки.'],
  accLights:'Над окном загораются пять маленьких огоньков. Это твой путь.',
 },
 ro:{
  title:'Călătoria',
  gateA:'găsește un colț liniștit<br>și nu te grăbi',gateB:'[ APASĂ PENTRU A ÎNCEPE ]',
  santa:'MOȘ CRĂCIUN',
- themes:['Acum','Căldură','Amintiri','Cei dragi','Dăruire'],
- questions:[
-  'Când mi-am pierdut ultima dată noțiunea timpului? Ce făceam atunci?',
-  'Care este un lucru mic care îmi face, de fiecare dată, ziua mai bună?',
-  'Dacă aș putea atârna în acest brad un singur lucru de-al meu, care ar fi și de ce tocmai acela?',
-  'Pe cine mi-aș dori aici chiar acum? Pentru ce i-aș mulțumi?',
-  'Ce aș putea dărui cuiva săptămâna aceasta ca să zâmbească? Timpul contează. Un cuvânt contează.',
- ],
+ themes:["Timp", "Lumină", "Amintire", "Recunoștință", "Generozitate"],
+ questions:["Când mi-am pierdut ultima dată noțiunea timpului făcând ceva ce iubesc?", "Ce îmi aprinde lumina în viață atunci când în jur e întuneric?", "Care amintire e cea mai prețioasă podoabă din bradul meu?", "Ce lucru bun din viața mea am încetat de mult să observ?", "Pe cine am bucurat cândva atât de mult încât țin minte și acum?"],
  roadNotBegun:'DRUMUL NU A ÎNCEPUT ÎNCĂ',firstNear:'PRIMA CLIPĂ E APROAPE',allDone:'TOATE CELE CINCI CLIPE',
  stepCount:(th,e)=>`${th.toUpperCase()} · ${e} / 5`,
- cNow:'ACUM',cSanta:'PÂNĂ LA MOȘ',cUntil:th=>`PÂNĂ LA ${th.toUpperCase()}`,cQuiet:'CLIPĂ DE LINIȘTE',
+ cNow:'ACUM',cSanta:'PÂNĂ LA MOȘUL SECRET',cUntil:th=>`PÂNĂ LA ${th.toUpperCase()}`,cQuiet:'CLIPĂ DE LINIȘTE',
  unitsDHM:'ZILE · ORE · MIN',unitsHMS:'ORE · MIN · SEC',
- clockTip:'Apasă pentru a comuta: acum · până la următoarea clipă · până la Moș',
+ clockTip:'Apasă pentru a comuta: acum · până la următoarea clipă · până la Moșul Secret',
  muteTip:'Muzică: pornită / oprită',
  intro:[
   ['Seară. Ninge de atâta vreme, încât lumea de afară a amuțit.'],
@@ -272,21 +249,16 @@ ro:{
  yes:'Da, hai',no:'Nu, n-am timp',
  changed:'Ceva s-a schimbat de când ai plecat.',
  arrive:[
-  'Fiecare parc începe gol. La fel ca fiecare decembrie.',
   'Cineva a fost aici. Acum e un brad, mic și liniștit.',
-  'Bradul strălucește. Pe pervaz e un glob cu zăpadă, iar de-a lungul geamului sunt luminițe calde.',
+  'Bradul s-a luminat. De-a lungul pervazului sunt luminițe calde.',
+  'Bradul e împodobit. Iar pe pervaz e un glob cu zăpadă, o mică iarnă de sine stătătoare.',
   'Acum sunt oameni în jurul bradului. Dansează în zăpadă, mână în mână. Singurătatea a rămas în urmă.',
   'Pe pervaz e o cutie. Deocamdată nu e pentru tine.',
  ],
- ask:q=>`Întreabă-te: ${lc(q)}`,
- quietLine:n=>`Nimeni nu ascultă. Rămâi cu asta într-o clipă de liniște: ${n} ${secRo(n)}, doar tu și ceasul.`,
- beginQuiet:'Începe clipa de liniște',thatMoment:'Clipa aceea a fost a ta.',
- after:[
-  'Până la următoarea oprire, observă o clipă pe care ți-ai dori s-o primești înapoi.',
-  'Fă-o intenționat, o singură dată. Nu ca pe o pauză de la viață, ci ca pe viață.',
-  'Uită-te săptămâna asta la raftul tău. Unele lucruri de acolo sunt povești.',
-  'Nu o ține doar în minte. Spune-le. Jocul poate aștepta.',
- ],
+ starters:[["A fost atunci când…"], ["Mi-e mai luminos când…"], ["Îmi amintesc cum…"], ["Lângă mine este…", "Mulțumesc pentru…"], ["Îmi amintesc cum am bucurat…"]],howTo:"Nimeni nu ascultă. Nu există un răspuns corect: primul gând e cel adevărat.",
+ cues:["Ce a venit primul?", "Și ce se află în spatele lui?"],qReady:"Sunt gata",qMore:"Încă treizeci de secunde",
+ reflect:[["Pierzi noțiunea timpului exact atunci când ești cu adevărat aici.", "Ceasurile numără minutele, dar nu știu care dintre ele au fost ale tale.", "Observă azi un minut pe care ai vrea să-l trăiești din nou."], ["Fiecare are felinarul lui: un om, o melodie, un obicei. Nu-l observi până nu se întunecă.", "Lumina nu trebuie să fie mare. Uneori e o fereastră într-o casă străină sau o singură frază.", "Fă azi, o dată, ceea ce te aprinde. Intenționat."], ["Fiecare podoabă din brad e povestea cuiva.", "Memoria nu e o arhivă, ci ceea ce am ales să păstrăm. Alegând o amintire, alegi din ce ești făcut.", "Povestește-o cuiva. Ce se povestește trăiește mai mult."], ["Multe lucruri bune nu se văd, pur și simplu sunt acolo: o cameră caldă, răbdarea cuiva, o dimineață fără durere. Obișnuința le face invizibile.", "Recunoștința le aduce înapoi în vedere. Nu pentru că ți le datorează cineva, ci pentru că fără ele ai fi altul.", "Spune azi „mulțumesc” cu voce tare: unui om, lumii de dincolo de fereastră sau ție."], ["Există o bucurie liniștită în a face pe cineva să se simtă bine. Îți amintești cum ascundeai un cadou și așteptai să fie găsit? Bucuria celui care dăruiește e adesea mai tăcută, dar durează mai mult.", "A da e unul dintre puținele moduri de a te simți deopotrivă necesar și puternic.", "Dacă ai chef, repetă azi sentimentul: o mică bucurie pentru cineva, fără calcul. Iar apoi, cutia de pe pervaz, ca promis."]],
+ beginQuiet:'Începe clipa de liniște',
  afterLast:d=>`Aceasta a fost ultima întrebare. Ne vedem pe ${d}.`,
  remindQ:(l,d)=>`Vrei un memento pentru ${l}? Se deschide ${d}.`,
  calGoogle:'Google Calendar',calIcs:'Descarcă .ics (Apple / Outlook)',calNo:'Nu, mulțumesc',
@@ -295,22 +267,22 @@ ro:{
  waitFirst:(l,d)=>`Prima clipă, ${l}, se deschide ${d}. Până atunci: fereastra, zăpada, ceasul.`,
  waitNext:(l,d)=>`Încă nimic nu s-a schimbat. ${l} se deschide ${d}.`,
  waitFinale:d=>`Toate cele cinci opriri sunt parcurse. Cutia de pe pervaz se deschide ${d}.`,
- remindBtn:'↻ AMINTEȘTE-MI SĂ MĂ ÎNTORC',
+ remindBtn:'AMINTEȘTE-MI SĂ MĂ ÎNTORC',
  finDay:'Ziua a venit.',finBox:'Cutia de pe pervaz te așteaptă.',finOpen:'Hai. Deschide-o.',finNoBox:' (Imaginează-ți aici o cutie.)',
  tapBox:'APASĂ PE CUTIE',
- finInside:n=>`Înăuntru nu e nimic ce poți ține în mână. Doar o inimă, cinci întrebări și cele ${n} ${secRo(n)} pe care le-ai dat fiecăreia.`,
+ finInside:()=>`Înăuntru nu e nimic ce poți ține în mână. Doar o inimă, cinci întrebări și timpul pe care i l-ai dat fiecăreia.`,
  finReal:'Iar undeva aproape te așteaptă o cutie adevărată, cu numele tău pe ea.',
  finThesis:'Timpul e singurul lucru pe care nu-l poate împacheta nimeni.\nUn cadou e doar un motiv de a-l petrece cu cineva.',
  finTake:'Ia asta cu tine. Pune din nou aceste întrebări, cândva.',merry:'Sărbători fericite.',
  cardTitle:'DECEMBRIE AL TĂU',cardSub:'CINCI ÎNTREBĂRI CARE MERITĂ PUSE DIN NOU',cardFrom:d=>`DE LA MOȘUL TĂU SECRET · ${d.toUpperCase()}`,
- cardSave:'SALVEAZĂ FELICITAREA',cardClose:'ÎNCHIDE',cardAgain:'↻ DESCHIDE FELICITAREA DIN NOU',cardFeedback:'SPUNE-I AUTORULUI CE GÂNDEȘTI >',
- endTitle:'SFÂRȘIT?',retry:'↻ M-AM RĂZGÂNDIT',
+ cardSave:'SALVEAZĂ FELICITAREA',cardClose:'ÎNCHIDE',cardAgain:'DESCHIDE FELICITAREA DIN NOU',cardFeedback:'SPUNE-I AUTORULUI CE GÂNDEȘTI >',
+ endTitle:'SFÂRȘIT?',retry:'M-AM RĂZGÂNDIT',
  dec1:['Înțeleg. Se întâmplă.','Deadline-uri, apeluri, tichete… toate foarte importante.','Dar aventura nu bate de două ori la ușă.\nPe a ta ai pierdut-o.','Așa trece viața — în grabă, între sarcini, pe lângă cele mai interesante lucruri. Tra-la-la.','Cadoul tot îl vei primi. Dar va fi doar un cadou.','Felinarul pâlpâie. O dată. A doua oară.','Și se stinge.'],
  dec2:['Cum vrei. Drumul va aștepta.','Felinarul pâlpâie… și se stinge.'],
  dec3:['Se pare că, pentru tine, e doar un joc.','Bine. Aștept deoparte cât timp te joci.'],
  backLamp:'Felinarul tresare… și se aprinde din nou.',back1:'Știam că te vei întoarce.',back2:'Încăpățânare. Dar fie.',backQ:'Deci? Mergem?',
  acc1:'Grozav. Speram să spui da.',acc1b:'Acum e pe bune.',
- acc:['Regulile sunt simple. Cinci opriri. La fiecare, o întrebare.','Nu trebuie să scrii nimic. Nimeni nu ascultă, nimeni nu ține scorul. Asta e ideea.','Întrebările sunt pentru tine. Pune-le în liniște. Răspunde sincer. Sau nu — e drumul tău.','Între opriri avem nevoie de timp, cam cinci zile fiecare. Unui cadou nu-i place graba.'],
+ acc:['Regulile sunt simple. Cinci opriri. La fiecare, o întrebare.','Nu trebuie să scrii nimic. Nimeni nu ascultă, nimeni nu ține scorul. Asta e ideea.','Întrebările sunt pentru tine. Pune-le în liniște. Răspunde sincer. Sau nu — e drumul tău.','O oprire pe zi, cinci în total. Unui cadou nu-i place graba.'],
  accLights:'Deasupra ferestrei se aprind cinci luminițe. Acesta e drumul tău.',
 },
 };
@@ -338,7 +310,7 @@ const stageMeta=i=>{const m=CONFIG.stages[i];if(!m||!PORT)return m;const P=CONFI
 const artEl=$('#art'),imgsEl=$('#imgs'),imgA=$('#imgA'),dis=$('#dis'),fx=$('#fx'),fctx=fx.getContext('2d'),clk=$('#clk'),cctx=clk.getContext('2d');
 let box={s:1,left:0,top:0,w:LW,h:LH,P:2},glass={x:0,y:0,w:1,h:1},flakes=[];
 let stageIdx=0,meta=stageMeta(0);
-let t=0,lampPower=0,lampTarget=0,lampRate=14,flick=1,dip=0,lastBright=-1,dpr=1;
+let breathA=0,t=0,lampPower=0,lampTarget=0,lampRate=14,flick=1,dip=0,lastBright=-1,dpr=1;
 const imgCache={};
 const loadImg=src=>imgCache[src]||(imgCache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('missing '+src));i.src=src}));
 const stageFor=n=>Math.min(Math.max(n,0),CONFIG.stages.length-1);      // 0 = start (no tree), 1..5 = stop, 6 = finale -> picture index (the last one is reused)
@@ -362,7 +334,7 @@ function layout(){
   if(orientChanged){orientChanged=false;showStage(stageIdx,true)}     // the phone was turned: switch to the other set of pictures
 }
 function placeClock(){
-  const c=meta.clock,s=box.s,x=box.left+c[0]*s,y=box.top+c[1]*s,w=(c[2]-c[0])*s,h=(c[3]-c[1])*s;
+  const c0=meta.clock,G=PORT?[0,0,0,0]:CONFIG.clockGrow,c=[c0[0]-G[0],c0[1]-G[1],c0[2]+G[2],c0[3]+G[3]],s=box.s,x=box.left+c[0]*s,y=box.top+c[1]*s,w=(c[2]-c[0])*s,h=(c[3]-c[1])*s;
   clk.style.left=x+'px';clk.style.top=y+'px';clk.style.width=w+'px';clk.style.height=h+'px';
   clk.width=Math.round(w*dpr);clk.height=Math.round(h*dpr);clk.dataset.w=w;clk.dataset.h=h;clkKey='';
   clk.style.transform=`rotate(${meta.tilt||0}deg)`;buildOcc();
@@ -386,7 +358,7 @@ function buildOcc(){
 }
 
 /* ---- the gift on the windowsill: box + lid + a heart that rises out of it ---- */
-const giftEl=$('#gift'),giftBody=$('#giftBody'),giftLid=$('#giftLid'),heartWrap=$('#heartWrap'),heartEl=$('#heart'),giftSh=$('#giftSh'),giftHint=$('#giftHint'),flashEl=$('#flash');
+const giftEl=$('#gift'),giftBody=$('#giftBody'),giftLid=$('#giftLid'),heartWrap=$('#heartWrap'),heartEl=$('#heart'),giftSh=$('#giftSh'),giftHint=$('#giftHint'),giftLayer=$('#giftLayer'),flashEl=$('#flash');
 let giftOn=false,giftOpened=false,giftClickRes=null;const particles=[];
 const giftReady=CONFIG.gift?Promise.all([CONFIG.gift.body,CONFIG.gift.lid,CONFIG.gift.heart].map(loadImg)).then(()=>{
   giftBody.src=CONFIG.gift.body;giftLid.src=CONFIG.gift.lid;heartEl.src=CONFIG.gift.heart;return giftBody.decode().catch(()=>{}).then(()=>true)}).catch(()=>false):Promise.resolve(false);
@@ -395,6 +367,8 @@ function placeGift(){
   const g=CONFIG.gift&&(PORT?{...CONFIG.gift,...CONFIG.portrait.gift}:CONFIG.gift);if(!g)return;const s=box.s,w=g.w*s,h=giftBody.naturalWidth?w*giftBody.naturalHeight/giftBody.naturalWidth:w*.8;
   const left=box.left+g.x*s-w/2,top=box.top+g.y*s-h;
   Object.assign(giftEl.style,{width:w+'px',height:h+'px',left:left+'px',top:top+'px'});
+  giftEl.style.setProperty('--rise',(g.riseSeconds||4)+'s');
+  giftEl.style.setProperty('--hy',PORT?'-250%':'-215%');                       // how high the heart floats above the box (a little lower on wide screens)
   const lf=g.lidFit;Object.assign(giftLid.style,{width:lf.w*100+'%',left:lf.left*100+'%',top:lf.top*100+'%'});
   Object.assign(heartEl.style,{width:g.heartW*100+'%',left:(1-g.heartW)/2*100+'%',top:g.heartTop*100+'%'});
   const r=g.rim,p=q=>`${q[0]*100}% ${q[1]*100}%`;
@@ -405,9 +379,15 @@ function placeGift(){
 async function showGift(animate,opened=false){
   if(giftOn||!(await giftReady))return;giftOn=true;placeGift();
   giftEl.className='show';giftSh.className='show';void giftEl.offsetWidth;
+  if(opened==='rise'){giftEl.classList.add('wait');return}                    // page reload after the gift was opened: the heart rises when the light comes on (riseHeart)
   if(opened){giftEl.classList.add('opened');giftOpened=true;return}
   if(animate){giftEl.classList.add('drop');setTimeout(()=>{giftEl.classList.remove('drop');giftEl.classList.add('idle')},1000*(FAST?.3:1))}
   else giftEl.classList.add('idle');
+}
+async function riseHeart(){
+  if(!giftEl.classList.contains('wait'))return;
+  giftEl.classList.remove('wait');void giftEl.offsetWidth;giftEl.classList.add('rise');
+  await sleep((CONFIG.gift.riseSeconds||4)*1000);giftOpened=true;giftEl.classList.remove('rise');giftEl.classList.add('opened');
 }
 function onGiftActivate(){
   if(!giftOn||giftOpened)return;
@@ -459,7 +439,7 @@ async function showStage(idx,instant=false){
 /* ---- live clock: 7-segment digits drawn on the clock screen of the picture, with a title and a mode switch ---- */
 const SEG={0:'abcdef',1:'bc',2:'abdeg',3:'abcdg',4:'bcfg',5:'acdfg',6:'acdefg',7:'abc',8:'abcdefg',9:'abcdfg'};
 let curMode=0,clockForced=false,clockAuto=true,clockPausedUntil=0,lastSwitch=0,clkKey='',quietLeft=0,quietRes=null;
-let clockHover=false,clockClicked=false,flashUntil=0,lastModeSeen=-1;
+let clockHover=false,clockClicked=false;
 const nextLockedIdx=()=>unlockedCount();
 function modes(){const m=[0];if(state.accepted&&nextLockedIdx()<5)m.push(1);m.push(2);return m}
 function nextMode(){const m=modes(),i=m.indexOf(curMode);curMode=m[(i+1)%m.length];lastSwitch=t}
@@ -476,48 +456,52 @@ function clockState(){
   }
   return{digits:[a,b,c].map(n=>String(n).padStart(2,'0')).join(''),name,units};
 }
-const uiFont=px=>LANG==='ro'?`${Math.round(px*1.35)}px "Pixelify Sans","Press Start 2P",monospace`:`${px}px "Press Start 2P",monospace`;
+const uiFont=px=>`600 ${Math.round(px*2)}px "Handjet",monospace`;      // one font for every language (Handjet has Latin, Romanian and Cyrillic); sizes are given in the old 8px-grid units
 const hexA=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`};
 function drawClock(){
   if(!clockForced&&clockAuto&&t-lastSwitch>9&&Date.now()>clockPausedUntil)nextMode();
   if(clockForced)curMode=3;else if(!modes().includes(curMode))curMode=0;
-  if(curMode!==lastModeSeen){lastModeSeen=curMode;flashUntil=t+1.7}                     // every mode change shows its title for a moment
   const st=clockState(),w=+clk.dataset.w,h=+clk.dataset.h;if(!w)return;
-  const ms=modes(),led=ms.indexOf(curMode),big=h>=30,flash=!big&&t<flashUntil;
+  const ms=modes(),led=ms.indexOf(curMode),big=h>=30;
   const colon=curMode!==0||Math.floor(t)%2===0,hint=!clockClicked&&!clockForced&&(t%5)<1.5?Math.floor(t*6)%ms.length:-1;
-  const key=[st.digits,colon,led,ms.length,curMode,clockHover,hint,flash,st.name,st.units,flash?1:0,meta.digit].join('|');
+  const key=[st.digits,colon,led,ms.length,curMode,clockHover,hint,st.name,st.units,meta.digit].join('|');
   if(key===clkKey)return;clkKey=key;
   const c=cctx,lit=meta.digit||'#e6e6e6',pad=Math.max(2,Math.round(h*.07));
   c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle=meta.screen||'#0b0b0b';c.fillRect(0,0,w,h);c.textBaseline='alphabetic';
   const fitFont=(txt,maxW,sizes)=>{for(const f of sizes){c.font=uiFont(f);if(c.measureText(txt).width<=maxW)return f}return sizes[sizes.length-1]};
   // --- mode switch (top right): one segment per mode, the active one lit; brighter on hover, a travelling wave as a hint
-  const n=ms.length,sw=clamp(Math.round(h*.24),6,12),sh=clamp(Math.round(h*.12),3,5),gap=2,swW=n*sw+(n-1)*gap,sx=w-pad-swW-1,sy=pad+1;
-  if(!clockForced&&!flash){
+  const sq=clamp(Math.round(h*.1),4,7),n=ms.length,sw=big?sq:clamp(Math.round(h*.24),6,12),sh=big?sq:clamp(Math.round(h*.12),3,5),gap=2,swW=n*sw+(n-1)*gap,sx=w-pad-swW-1;
+  let sy=pad+1;
+  // --- title on the screen itself. A small (phone) clock gets a smaller font so that the title and the time are always there together
+  let top=pad,showSw=!clockForced;
+  if(big){
+    const f=fitFont(st.name,w-2*pad-(clockForced?0:swW)-6,[8,7,6,5]);c.font=uiFont(f);c.textAlign='left';c.fillStyle=hexA(lit,.82);
+    const base=pad+f;c.fillText(st.name,pad+2,base);top=pad+9+Math.max(3,Math.round(h*.06));      // the same top for every title, so the digits never move or change size. The title stays where it is: higher, the circumflexes of Â Ă would be cut by the screen's edge
+    sy=Math.round(base-f*2*.6+.5);                                                   // the switch lines up with the top of the title's capitals
+  }else{
+    const f=fitFont(st.name,w-2*pad-1,[5,4,3.5]),capH=Math.round(f*2*.6);c.font=uiFont(f);c.textAlign='left';c.fillStyle=hexA(lit,.85);
+    showSw=showSw&&c.measureText(st.name).width+swW+6<=w-2*pad;                       // the switch only if there is room for it
+    c.fillText(st.name,pad+1,pad+capH);top=pad+capH+2;
+  }
+  if(showSw){
     for(let k=0;k<n;k++){
       const on=k===led||k===hint,x=sx+k*(sw+gap);
       c.shadowColor=hexA(lit,.45);c.shadowBlur=on?sh*1.2:0;
-      c.fillStyle=on?lit:hexA(lit,clockHover?.38:.2);c.fillRect(x,sy,sw,sh);
-      c.shadowBlur=0;c.strokeStyle=hexA(lit,clockHover?.95:.55);c.lineWidth=1;c.strokeRect(x-.5,sy-.5,sw+1,sh+1);
+      c.fillStyle=on?lit:hexA(lit,clockHover?.28:.1);c.fillRect(x,sy,sw,sh);
+      c.shadowBlur=0;c.strokeStyle=hexA(lit,clockHover?.6:.2);c.lineWidth=1;c.strokeRect(x-.5,sy-.5,sw+1,sh+1);
     }
   }
-  // --- title: on the screen itself (small screens flash it over the digits for a moment)
-  const titleRoom=w-2*pad-(clockForced?0:swW)-6;
-  let top=pad;
-  if(flash){
-    const f=fitFont(st.name,w-2*pad,[8,7,6,5]);c.font=uiFont(f);c.fillStyle=lit;c.textAlign='center';
-    const two=st.units&&h>=24&&c.measureText(st.units).width<=w-2*pad;
-    c.fillText(st.name,w/2,Math.round(h/2+(two?-f*.2:f*.4)));
-    if(two){const f2=fitFont(st.units,w-2*pad,[6,5]);c.font=uiFont(f2);c.fillStyle=hexA(lit,.7);c.fillText(st.units,w/2,Math.round(h/2+f*1.0+2))}
-    return;
-  }
-  if(big){
-    const f=fitFont(st.name,titleRoom,[8,7,6,5]);c.font=uiFont(f);c.textAlign='left';c.fillStyle=hexA(lit,.82);
-    c.fillText(st.name,pad+2,pad+f);top=pad+8+Math.max(3,Math.round(h*.06));        // the same top for every title, so the digits never move or change size
-  }
   // --- digits (soft glow, faint ghost segments)
-  if(!big)top=pad+sh+3;                                                                  // small screen: switch strip above the digits (space kept even when hidden)
-  const unitsRoom=big&&h>=48,unitsH=unitsRoom?8:0,availH=h-top-pad-unitsH,u=Math.max(1,Math.floor(Math.min((w-2*pad)*.96/43,availH/9)*2)/2);
-  const x0=Math.round((w-43*u)/2),y0=Math.round(top+(availH-9*u)/2);
+  const unitsRoom=big&&h>=48,wMax=(w-2*pad)*.96/43;
+  let u,y0,unitsBase=0;
+  if(unitsRoom){                                   // title / digits / units with equal gaps: the gap under the title is repeated between the digits and the units
+    const tb=pad+8,cap=7,bm=2,avail=h-tb-cap-bm;
+    u=Math.max(1,Math.floor(Math.min(wMax,(avail-6)/9)*2)/2);
+    const gp=Math.min(7,(avail-9*u)/2);y0=Math.round(tb+gp);unitsBase=Math.round(y0+9*u+gp+cap);
+  }else{
+    const availH=h-top-pad;u=Math.max(1,Math.floor(Math.min(wMax,availH/9)*2)/2);y0=Math.round(top+(availH-9*u)/2);
+  }
+  const x0=Math.round((w-43*u)/2);
   const ghost=hexA(lit,.07),R=(x,y,ww,hh,on)=>{c.fillStyle=on?lit:ghost;c.fillRect(x0+x*u,y0+y*u,ww*u,hh*u)};
   c.shadowColor=hexA(lit,.32);c.shadowBlur=u*.5;
   const pos=[0,6,16,22,32,38];
@@ -525,7 +509,7 @@ function drawClock(){
     R(x+1,0,3,1,on('a'));R(x,1,1,3,on('f'));R(x+4,1,1,3,on('b'));R(x+1,4,3,1,on('g'));R(x,5,1,3,on('e'));R(x+4,5,1,3,on('c'));R(x+1,8,3,1,on('d'));}
   for(const cx of [13,29])for(const dy of [2,6])R(cx,dy,1,1,colon);
   c.shadowBlur=0;
-  if(unitsRoom){const f=fitFont(st.units,w-2*pad,[6,5]);c.font=uiFont(f);c.textAlign='center';c.fillStyle=hexA(lit,.55);c.fillText(st.units,w/2,Math.round(h-pad-1))}
+  if(unitsRoom){const f=fitFont(st.units,w-2*pad,[6,5]);c.font=uiFont(f);c.textAlign='center';c.fillStyle=hexA(lit,.55);c.fillText(st.units,w/2,unitsBase)}
 }
 /* ---- the mouse as a body moving through the air ----------------------------------------------------
    The cursor is a small round body. As it moves, the air has to get out of its way and fill the space behind it:
@@ -607,7 +591,9 @@ function frame(ts){
   lampPower+=(lampTarget-lampPower)*Math.min(1,dt*lampRate);
   dip*=Math.pow(.02,dt);if(Math.random()<dt*.3)dip=.12+Math.random()*.2;
   flick=(1+.03*Math.sin(t*9)+.02*Math.sin(t*21))*(1-(lampPower>.5?dip:0));
-  const b=.1+.9*clamp(lampPower,0,1);if(Math.abs(b-lastBright)>.015){lastBright=b;imgsEl.style.filter=`brightness(${b.toFixed(3)})`}
+  breathA+=((quietActive?1:0)-breathA)*Math.min(1,dt*1.2);
+  const bm=1-.16*breathA*(.5-.5*Math.cos(t*Math.PI/4));                  // the lamp breathes during the pause for thinking: 8 s, dims by up to 16%
+  const b=.1+.9*clamp(lampPower,0,1)*bm;if(Math.abs(b-lastBright)>.006){lastBright=b;const f=`brightness(${b.toFixed(3)})`;imgsEl.style.filter=f;giftLayer.style.filter=b>.995?'none':f}
   if(quietLeft>0){
     quietLeft-=FAST?dt*8:dt;
     if(quietLeft<=0){quietLeft=0;if(quietRes){const r=quietRes;quietRes=null;r()}}
@@ -615,7 +601,7 @@ function frame(ts){
   // overlay canvas
   const P=box.P,k=box.s/P,c=fctx;c.clearRect(0,0,fx.width,fx.height);
   const lx=meta.lamp[0]*k,ly=meta.lamp[1]*k,LR=120*k;
-  const lp=clamp(lampPower,0,1)*flick;
+  const lp=clamp(lampPower,0,1)*flick*bm;
   if(lp>.02){c.globalCompositeOperation='lighter';const gr=c.createRadialGradient(lx,ly,0,lx,ly,LR);
     const gc=(meta.glow||[255,255,255]).join(',');gr.addColorStop(0,`rgba(${gc},${(.22*lp).toFixed(3)})`);gr.addColorStop(1,`rgba(${gc},0)`);c.fillStyle=gr;c.fillRect(lx-LR,ly-LR,LR*2,LR*2);c.globalCompositeOperation='source-over'}
   const sway=Math.sin(t*.35)*6,gx=glass.x,gy=glass.y,gw=glass.w,gh=glass.h;
@@ -693,13 +679,13 @@ async function typeLine(text,voice){
   }
   typing=false;lineDoneAt=performance.now();
 }
-const L=(t,who,act)=>({t,who,act});
+const L=(t,who,act,cls)=>({t,who,act,cls});
 async function say(lines,{hold=false}={}){
   dialog.classList.add('on');
   for(let n=0;n<lines.length;n++){
     const l=lines[n];
     if(l.who){tagEl.textContent=l.who==='SANTA'?T('santa'):l.who;tagEl.classList.add('on')}else tagEl.classList.remove('on');
-    textEl.className=l.who?'voice':'narr';
+    textEl.className=l.who?'voice':'narr';dialog.classList.toggle('q',!!l.cls);
     nextEl.style.opacity=0;srEl.textContent=l.t;
     if(l.act)l.act();
     await typeLine(l.t,!!l.who);
@@ -810,34 +796,60 @@ const santaDay=()=>new Date(santaMs).toLocaleDateString(LOC[LANG],{month:'long',
 const INTRO=()=>T('intro').map(([t,w])=>L(t,w));
 
 async function runStop(n){
+  const already=stageIdx===stageFor(n);                  // stop I: the picture was already swapped in the dark (see accept())
   await showStage(stageFor(n));
-  stageFlicker();
+  if(!already)stageFlicker();
   if(state.entered<n){state.entered=n;save();renderStepper(true)}
   if(n>=5)showGift(true);
-  const arrive=n===1?[L(T('arrive')[0],'SANTA')]:[L(T('changed')),L(T('arrive')[n-1],'SANTA')];
-  await say([...arrive,L(T('ask')(QUESTIONS[n-1]),'SANTA'),L(T('quietLine')(CONFIG.quietSeconds),'SANTA')],{hold:true});
+  const arrive=n===1?[L(T('arrive')[0],'SANTA')]:[L(T('changed')),L(T('arrive')[n-1],'SANTA')];     // stop I appears before the player's eyes, so no "something has changed"
+
+  await say([...arrive,L(T('howTo'),'SANTA')]);
+  await say([L(QUESTIONS[n-1],`${ROM[n-1]} · ${THEMES[n-1].toUpperCase()}`,undefined,'q')],{hold:true});      // the question gets a screen of its own
   await choose([T('beginQuiet')]);
-  await quietMoment();
-  await say([L(T('thatMoment'),'SANTA'),L(n<5?T('after')[n-1]:T('afterLast')(santaDay()),'SANTA')]);
+  await quietMoment(n);
+  await say([...T('reflect')[n-1].map(t=>L(t,'SANTA')),...(n===5?[L(T('afterLast')(santaDay()),'SANTA')]:[])]);
   state.done=n;save();renderStepper(true);
   dialog.classList.remove('on');
   if(n<5)await askRemind(new Date(stopMs[n]),quote(THEMES[n]));
   else if(nowMs()<santaMs)await askRemind(new Date(santaMs),T('lastSurprise'));
 }
-function quietMoment(){
+/* The pause for thinking: the dialogue goes away, the question stays as a quiet caption, a sentence starter fades in (stop IV has two:
+   first noticing, then thanking), two soft cues come at 40% and 70%, the lamp breathes (8 s), "I am ready" appears after quietReadyAfter
+   seconds and "thirty more seconds" in the last 10. The clock counts down (quietLeft is in game seconds, so FAST works too). */
+const quietEl=$('#quiet'),qQ=$('#qQ'),qS=$('#qS'),qCue=$('#qCue'),qReady=$('#qReady'),qMore=$('#qMore');
+let quietTotal=0,quietActive=false;
+function setFade(el,s){                                          // change a caption with a fade out / fade in
+  if(el.dataset.s===s)return;el.dataset.s=s;
+  const swap=()=>{if(el.dataset.s!==s)return;el.textContent=s;if(s)el.classList.add('on')};
+  if(el.classList.contains('on')){el.classList.remove('on');setTimeout(swap,650)}else swap();
+}
+function quietMoment(n){
   dialog.classList.remove('on');
-  clockForced=true;curMode=3;quietLeft=CONFIG.quietSeconds;
-  return new Promise(res=>{quietRes=res}).then(()=>{clockForced=false;curMode=0;lastSwitch=t});
+  const base=CONFIG.quietSeconds,starters=T('starters')[n-1],cues=T('cues');
+  clockForced=true;curMode=3;quietLeft=DBG.auto?Math.min(base,3):base;quietTotal=quietLeft;quietActive=true;
+  qQ.textContent=QUESTIONS[n-1];[qS,qCue].forEach(el=>{el.textContent='';el.dataset.s='';el.classList.remove('on')});
+  qReady.textContent=T('qReady');qMore.textContent=T('qMore');qReady.classList.remove('on');qMore.classList.remove('on');
+  quietEl.classList.add('on');
+  qReady.onclick=()=>{if(quietLeft>0)quietLeft=.001};
+  qMore.onclick=()=>{if(quietLeft>0){quietLeft+=CONFIG.quietExtra;quietTotal+=CONFIG.quietExtra;qMore.classList.remove('on')}};
+  const iv=setInterval(()=>{
+    const e=quietTotal-quietLeft,live=quietLeft>0;
+    setFade(qS,e<2?'':starters.length>1&&e>=base*.5?starters[1]:starters[0]);
+    setFade(qCue,e>=base*.4&&e<base*.4+7?cues[0]:e>=base*.7&&e<base*.7+7?cues[1]:'');
+    qReady.classList.toggle('on',live&&e>=CONFIG.quietReadyAfter);
+    qMore.classList.toggle('on',live&&quietLeft<10);
+  },200);
+  return new Promise(res=>{quietRes=res}).then(()=>{
+    clearInterval(iv);quietActive=false;quietEl.classList.remove('on');
+    clockForced=false;curMode=0;lastSwitch=t;
+    return sleep(900);
+  });
 }
 
-let offeredFirst=false;
 async function waitForStop(n){
   const date=new Date(stopMs[n-1]),label=quote(THEMES[n-1]);
   remindTarget={date,label};
-  if(state.done===0&&n===1){
-    await say([L(T('waitFirst')(label,fmtDate(date)),'SANTA')]);
-    if(!offeredFirst){offeredFirst=true;await askRemind(date,label)}
-  }else await say([L(T('waitNext')(label,fmtDate(date)),'SANTA')]);
+  await say([L(T('waitNext')(label,fmtDate(date)),'SANTA')]);
   dialog.classList.remove('on');
   remindBtn.classList.add('on');curMode=1;lastSwitch=t;
   await new Promise(res=>{const iv=setInterval(()=>{if(unlockedCount()>=n){clearInterval(iv);res()}else if(DBG.auto)dbgJump()},FAST?300:1200)});
@@ -867,7 +879,7 @@ async function finale(){
 /* ---- the keepsake card ---- */
 async function drawCard(){
   const cv=$('#cardCv'),c=cv.getContext('2d'),W=cv.width,H=cv.height;
-  try{await Promise.all([document.fonts.load('28px "Press Start 2P"'),document.fonts.load('30px "Pixelify Sans"')])}catch(e){}
+  try{await Promise.all([document.fonts.load('600 28px "Handjet"'),document.fonts.load('500 28px "Handjet"')])}catch(e){}
   c.fillStyle='#050505';c.fillRect(0,0,W,H);
   for(let i=0;i<260;i++){const g=90+Math.floor(Math.random()*150);c.fillStyle=`rgb(${g},${g},${g})`;const s=Math.random()<.2?4:2;c.fillRect(Math.floor(Math.random()*W/2)*2,Math.floor(Math.random()*H/2)*2,s,s)}
   const frame=(o,col)=>{c.fillStyle=col;c.fillRect(o,o,W-2*o,6);c.fillRect(o,H-o-6,W-2*o,6);c.fillRect(o,o,6,H-2*o);c.fillRect(W-o-6,o,6,H-2*o)};
@@ -876,7 +888,7 @@ async function drawCard(){
   c.textAlign='center';c.fillStyle='#ececec';c.font=uiFont(title.length>14?30:34);c.fillText(title,W/2,150);
   c.fillStyle='#8c8c8c';c.font=uiFont(sub.length>34?11:14);c.fillText(sub,W/2,196);
   c.textAlign='left';let y=300;
-  const qf=LANG==='ru'?{f:'17px "Press Start 2P",monospace',lh:34}:{f:'30px "Pixelify Sans","Press Start 2P",monospace',lh:38};
+  const qf={f:'500 42px "Handjet",monospace',lh:46};
   const wrap=(txt,maxW)=>{const words=txt.split(' ');let line='',lines=[];for(const w of words){const test=line?line+' '+w:w;if(c.measureText(test).width>maxW&&line){lines.push(line);line=w}else line=test}lines.push(line);return lines};
   QUESTIONS.forEach((q,i)=>{
     c.fillStyle='#e0c88a';c.font=uiFont(20);c.fillText(`${ROM[i]} · ${THEMES[i].toUpperCase()}`,110,y);
@@ -928,6 +940,10 @@ async function accept(){
   await say([L(declines?T('acc1b'):T('acc1'),'SANTA'),...T('acc').map(t=>L(t,'SANTA')),
     L(T('accLights'),undefined,()=>{state.accepted=true;save();renderStepper(true)})]);
   dialog.classList.remove('on');
+  // the questions start at once: the light goes out, the picture is swapped in the dark (so the different framing of the pictures never shows), the light comes back
+  await sleep(1200);lampOut();await sleep(2600);
+  await showStage(stageFor(1),true);await sleep(900);
+  await lampOnSeq();await sleep(700);
 }
 
 async function intro(){
@@ -965,21 +981,21 @@ function dbgJump(){                                    // move the pretend clock
 }
 if(CONFIG.allowDebug){
   const st=document.createElement('style');
-  st.textContent=`#dbg{position:fixed;left:8px;bottom:8px;z-index:40;font-family:var(--px);font-size:8px;color:#ddd;max-width:calc(100vw - 16px);display:flex;flex-direction:column}
+  st.textContent=`#dbg{position:fixed;left:8px;bottom:8px;z-index:40;font-family:var(--px);font-size:13px;color:#ddd;max-width:calc(100vw - 16px);display:flex;flex-direction:column}
   #dbg .box{display:none;background:rgba(0,0,0,.95);padding:10px;box-shadow:0 0 0 2px #777;margin-bottom:6px;width:340px;max-width:100%}
   #dbg.open .box{display:block}
   #dbg button{font:inherit;color:#ddd;background:#222;border:0;padding:6px 7px;margin:2px;cursor:pointer;box-shadow:0 0 0 1px #666}
   #dbg button:hover{background:#ddd;color:#000}
-  #dbg h4{font-size:8px;color:#888;margin:9px 0 3px;font-weight:400}
+  #dbg h4{font-size:13px;color:#888;margin:9px 0 3px;font-weight:400}
   #dbg label{display:inline-block;margin:5px 10px 0 0;cursor:pointer}
   #dbg .ro{color:#ffd166;line-height:1.7}#dbg .tip{color:#777;line-height:1.7;margin-top:8px}
   #dbg button{touch-action:manipulation}
   @media (max-width:699px){            /* phones: under the progress bar on the left (the sound button is on the right), panel opens downward, big touch targets */
     #dbg{bottom:auto;top:calc(max(14px,env(safe-area-inset-top)) + 62px);left:max(10px,env(safe-area-inset-left));flex-direction:column-reverse;align-items:flex-start}
-    #dbg .box{margin:6px 0 0;width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 150px);overflow-y:auto;font-size:10px}
-    #dbg button{font-size:10px;padding:10px 11px;margin:3px}
-    #dbg h4,#dbg .ro,#dbg .tip{font-size:9px}
-    #dbg label{font-size:10px;margin:8px 12px 0 0}
+    #dbg .box{margin:6px 0 0;width:min(340px,calc(100vw - 20px));max-height:calc(100dvh - 150px);overflow-y:auto;font-size:14px}
+    #dbg button{font-size:14px;padding:10px 11px;margin:3px}
+    #dbg h4,#dbg .ro,#dbg .tip{font-size:13px}
+    #dbg label{font-size:14px;margin:8px 12px 0 0}
   }`;
   document.head.appendChild(st);
   const root=document.createElement('div');root.id='dbg';
@@ -1084,11 +1100,12 @@ async function start(){
   gate.classList.add('hide');
   // show the picture matching the saved progress (the bare park for a first visit); the next stop's change is dissolved in by runStop
   await showStage(stageFor(state.accepted?state.entered:0),true);
-  if(state.accepted&&state.finale)showGift(false,true);else if(state.accepted&&state.done>=5)showGift(false);
+  if(state.accepted&&state.finale)showGift(false,'rise');else if(state.accepted&&state.done>=5)showGift(false);
   await sleep(900);
   artEl.classList.add('on');
   await sleep(3000);
   await lampOnSeq();
+  if(state.accepted&&state.finale)riseHeart();                  // reload after the gift was opened: the heart floats up out of the box as the light comes back
   await sleep(800);
   renderStepper();
   $('#stepper').classList.add('on');$('#clockUI').classList.add('on');muteBtn.classList.add('on');
