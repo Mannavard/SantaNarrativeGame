@@ -16,8 +16,7 @@ const OCCP={
   globeA:{circle:[400,1352,78]},          // the snow globe on stage 4
   globeB:{circle:[397,1357,74]},          // ... and on stage 5 (it sits slightly differently in that picture)
 };
-// SECRETS (desktop/landscape only, for now): small things to find in the room while waiting.
-// Branch points on the big foreground tree (logical 1536x1024 frame; same every stage, the camera does not move).
+// Where the snow sits on the big tree's branches (see SECRETS): the same in every landscape picture, the tree does not move.
 const TREE_BRANCHES=[[345,75],[515,100],[650,130],[790,162],[875,200]];
 const CONFIG={
   // When each stop opens (local time of the visitor). Stops stay open once they have opened.
@@ -318,9 +317,7 @@ const KEY='secret-santa-journey-v1';
 let state={accepted:false,done:0};
 try{if(QS.has('reset'))localStorage.removeItem(KEY);const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&typeof s.done==='number')state=s}catch(e){}
 state.entered=Math.max(state.entered||0,state.done||0);   // highest stop whose arrival has been shown
-state.secrets=state.secrets||{};                           // small things found in the room (prototype: no art yet, just a toast)
-if(state.branchShakenDay!==state.entered){state.branchShakenDay=state.entered;state.branchShaken=[]}  // fresh snow on the branches each new day
-state.branchShaken=state.branchShaken||[];
+state.secrets=state.secrets||{};state.findSeen=state.findSeen||[];   // findings: the secrets found ({key:true}) and those the collection has already shown
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
 
 /* =====================================================================
@@ -657,7 +654,7 @@ function frame(ts){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;c.fillStyle=`rgba(255,${p.g},120,${Math.min(1,p.life/p.max*1.6).toFixed(2)})`;
     const z=p.big?2:1;c.fillRect(Math.round(p.x),Math.round(p.y),z,z);if(p.big){c.fillRect(Math.round(p.x)-1,Math.round(p.y),1,1);c.fillRect(Math.round(p.x)+2,Math.round(p.y),1,1)}}
-  stepSecrets(dt,k,c);
+  stepRoom(dt,k,c);
   drawClock();
 }
 
@@ -746,7 +743,6 @@ function choose(opts,autoIdx=0){
    into the corner button; the button opens all six (face down, the found ones turn over one by one).
    ===================================================================== */
 const FIND=CONFIG.findings.list,findsBtn=$('#findsBtn'),findsEl=$('#finds'),findsGrid=$('#findsGrid'),findFly=$('#findFly'),flyWrap=findFly.querySelector('.fwrap');
-state.findSeen=state.findSeen||[];
 const isFound=f=>!!state.secrets[f.key];
 const findName=f=>T('findings')[f.key]||T('findLocked');
 const isFresh=f=>isFound(f)&&!state.findSeen.includes(f.key);
@@ -821,116 +817,96 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&findsOpen){e.preven
 updateFindsBtn();
 
 /* =====================================================================
-   SECRETS — small things to find in the room while waiting. Landscape only for now.
+   SECRETS — things in the room that answer a click (landscape only for now).
+   A prop is {click(x,y), draw(c,k)}: click gets logical-frame coordinates and returns true if the click was its
+   (it then does its thing and unlocks its finding), draw paints it on the overlay every frame. Earlier in PROPS wins.
    ===================================================================== */
+const near=(x,y,[px,py],r)=>Math.hypot(x-px,y-py)<=r;
 
-/* ---- the lamp: click it to make it blink once ---- */
+/* small white snow bits (shaken off a branch, swirling in the globe), in logical-frame px.
+   g = gravity, drag = share of the sideways speed left after a second, fade = seconds of fading out at the end of life,
+   inside = [x,y,r]: kept in that circle (the globe's glass), losing half the speed into the wall */
+let bits=[];
+const addBit=o=>bits.push({vx:0,vy:0,g:0,drag:1,life:0,max:1,fade:.6,...o});
+function stepBits(dt,k,c){
+  for(const p of bits){
+    p.life+=dt;p.vy+=p.g*dt;p.vx*=Math.pow(p.drag,dt);p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.inside){const [cx,cy,r]=p.inside,dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy);
+      if(d>r){const nx=dx/d,ny=dy/d;p.x=cx+nx*r;p.y=cy+ny*r;p.vx-=nx*Math.abs(p.vx)*.5;p.vy-=ny*Math.abs(p.vy)*.5}}
+  }
+  bits=bits.filter(p=>p.life<=p.max);if(bits.length>240)bits.splice(0,bits.length-240);
+  for(const p of bits){c.fillStyle=`rgba(255,255,255,${(.9*Math.min(1,(p.max-p.life)/p.fade)).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
+}
+function glow(c,x,y,r,rgba){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,rgba);g.addColorStop(1,rgba.replace(/[\d.]+\)$/,'0)'));c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2)}
+
+/* the star on top of the little tree (stages whose picture has one, CONFIG.stages[].star): masked dark until clicked, then lit for good */
+let starLitAt=-99;
+const starProp={
+  click(x,y){if(!meta.star||state.secrets.star||!near(x,y,meta.star,34))return false;starLitAt=t;unlockSecret('star');return true},
+  draw(c,k){
+    if(!meta.star)return;const x=meta.star[0]*k,y=meta.star[1]*k;
+    if(!state.secrets.star){glow(c,x,y,26*k,'rgba(8,10,16,.95)');return}
+    const age=t-starLitAt,fl=age<2.2?.6+.4*Math.sin(age*26):1;          // a short flicker as it catches
+    c.globalCompositeOperation='lighter';glow(c,x,y,42*k,`rgba(255,235,180,${(.38*fl).toFixed(3)})`);c.globalCompositeOperation='source-over';
+  },
+};
+
+/* the snow globe (stages that have it): a shake swirls the snow inside, which then settles */
+const globeProp={
+  click(x,y){
+    const [gx,gy,gr]=OCC.globe.circle;
+    if(!meta.occ.includes(OCC.globe)||!near(x,y,[gx,gy],gr+14))return false;
+    for(let i=0;i<26;i++){const a=Math.random()*6.283,r=Math.random()*gr*.75;
+      addBit({x:gx+Math.cos(a)*r,y:gy+Math.sin(a)*r,vx:(Math.random()-.5)*34,vy:-10-Math.random()*30,g:18,drag:.2,max:2.6+Math.random()*1.4,inside:[gx,gy,gr-3]})}
+    unlockSecret('globe');return true;
+  },
+};
+
+/* snow on the big tree's branches: one more branch each day from stop II, a shaken branch stays bare until the next day */
+function snowyBranches(){
+  if(state.branchShakenDay!==state.entered){state.branchShakenDay=state.entered;state.branchShaken=[]}
+  return TREE_BRANCHES.slice(0,clamp(state.entered-1,0,TREE_BRANCHES.length)).map((p,i)=>i).filter(i=>!state.branchShaken.includes(i));
+}
+const branchProp={
+  click(x,y){
+    const i=snowyBranches().find(i=>near(x,y,TREE_BRANCHES[i],38));if(i===undefined)return false;
+    state.branchShaken.push(i);save();
+    const [bx,by]=TREE_BRANCHES[i];
+    for(let j=0;j<22;j++){const max=1+Math.random()*.8;addBit({x:bx+(Math.random()-.5)*10,y:by+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:10+Math.random()*30,g:40,max,fade:max})}
+    unlockSecret('branch');return true;
+  },
+  draw(c,k){
+    c.fillStyle='rgba(235,240,245,.85)';
+    for(const i of snowyBranches()){const x=TREE_BRANCHES[i][0]*k,y=TREE_BRANCHES[i][1]*k;
+      for(let j=0;j<5;j++){const a=j*1.4+i;c.fillRect(x+Math.cos(a)*5*k-1,y+Math.sin(a)*3*k-1,3,3)}}
+  },
+};
+
+/* the lamp: blinks once (a toy, no finding) */
 let blinking=false;
-async function manualBlink(){
-  if(blinking)return;blinking=true;const was=lampTarget;
-  for(const v of [.3,1,.15,1])  {setLamp(v);await sleep(70)}
-  setLamp(was);blinking=false;
-}
-function tryLamp(lx,ly){
-  if(Math.hypot(lx-meta.lamp[0],ly-meta.lamp[1])>46)return false;
-  manualBlink();return true;
-}
+const lampProp={
+  click(x,y){
+    if(!near(x,y,meta.lamp,46))return false;
+    if(!blinking){blinking=true;const was=lampTarget;
+      (async()=>{for(const v of [.3,1,.15,1]){setLamp(v);await sleep(70)}setLamp(was);blinking=false})()}
+    return true;
+  },
+};
 
-/* ---- the star on top of the little tree (stages that have one): masked dark until clicked, then lit for good ---- */
-let starLit=!!state.secrets.star,starLitAt=-99;
-function tryStar(lx,ly){
-  if(!meta.star||starLit)return false;
-  if(Math.hypot(lx-meta.star[0],ly-meta.star[1])>34)return false;
-  starLit=true;starLitAt=t;unlockSecret('star');return true;
-}
-function drawStar(c,k){
-  if(!meta.star)return;
-  const [sx0,sy0]=meta.star,sx=sx0*k,sy=sy0*k;
-  if(!starLit){
-    const gr=c.createRadialGradient(sx,sy,0,sx,sy,26*k);
-    gr.addColorStop(0,'rgba(8,10,16,.95)');gr.addColorStop(.7,'rgba(8,10,16,.82)');gr.addColorStop(1,'rgba(8,10,16,0)');
-    c.fillStyle=gr;c.fillRect(sx-26*k,sy-26*k,52*k,52*k);
-  }else{
-    const age=t-starLitAt,fl=age<2.2?.6+.4*Math.sin(age*26):1;
-    c.globalCompositeOperation='lighter';
-    const gr=c.createRadialGradient(sx,sy,0,sx,sy,42*k);
-    gr.addColorStop(0,`rgba(255,235,180,${(.38*fl).toFixed(3)})`);gr.addColorStop(1,'rgba(255,235,180,0)');
-    c.fillStyle=gr;c.fillRect(sx-42*k,sy-42*k,84*k,84*k);
-    c.globalCompositeOperation='source-over';
-  }
-}
+const PROPS=[starProp,globeProp,branchProp,lampProp];
 
-/* ---- the snow globe: click/shake it, the snow inside swirls and settles (white, bounded to the glass circle) ---- */
-let globeFlakes=[];
-function globeActive(){return meta.occ&&meta.occ.includes(OCC.globe)}
-function tryGlobe(lx,ly){
-  if(!globeActive())return false;
-  const [gx,gy,gr]=OCC.globe.circle;if(Math.hypot(lx-gx,ly-gy)>gr+14)return false;
-  shakeGlobe();unlockSecret('globe');return true;
+/* called once per frame from frame(), after the ambient snow and steam */
+function stepRoom(dt,k,c){
+  if(!state.secrets.wind&&vort.length>=3)unlockSecret('wind');      // the wind: a fast swipe back and forth sheds a few wake swirls at once (stirSnow)
+  if(PORT)return;
+  for(const p of PROPS)if(p.draw)p.draw(c,k);
+  stepBits(dt,k,c);
 }
-function shakeGlobe(){
-  const [gx,gy,gr]=OCC.globe.circle;
-  for(let i=0;i<26;i++){const a=Math.random()*6.283,r=Math.random()*gr*.75;
-    globeFlakes.push({x:gx+Math.cos(a)*r,y:gy+Math.sin(a)*r,vx:(Math.random()-.5)*34,vy:-10-Math.random()*30,life:0,max:2.6+Math.random()*1.4})}
-  if(globeFlakes.length>160)globeFlakes.splice(0,globeFlakes.length-160);
-}
-function stepGlobe(dt,k,c){
-  if(!globeActive()){if(globeFlakes.length)globeFlakes=[];return}
-  const [gx,gy,gr]=OCC.globe.circle;
-  for(const p of globeFlakes){
-    p.life+=dt;p.vy+=18*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.2,dt);
-    const dx=p.x-gx,dy=p.y-gy,dist=Math.hypot(dx,dy);
-    if(dist>gr-3){const nx=dx/dist,ny=dy/dist;p.x=gx+nx*(gr-3);p.y=gy+ny*(gr-3);p.vx-=nx*Math.abs(p.vx)*.5;p.vy-=ny*Math.abs(p.vy)*.5}
-  }
-  globeFlakes=globeFlakes.filter(p=>p.life<=p.max);
-  for(const p of globeFlakes){const a=p.life>p.max-.6?Math.max(0,(p.max-p.life)/.6):1;
-    c.fillStyle=`rgba(255,255,255,${(a*.9).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
-}
-
-/* ---- snow sitting on the foreground tree's branches: a little more each day, shake a branch to drop it ---- */
-let snowBits=[];
-function branchLevel(){return PORT?0:clamp(state.entered-1,0,TREE_BRANCHES.length)}
-function tryBranch(lx,ly){
-  const n=branchLevel();
-  for(let i=0;i<n;i++){
-    if(state.branchShaken.includes(i))continue;
-    const [bx,by]=TREE_BRANCHES[i];if(Math.hypot(lx-bx,ly-by)>38)continue;
-    state.branchShaken.push(i);save();shakeBranch(bx,by);unlockSecret('branch');return true;
-  }
-  return false;
-}
-function shakeBranch(bx,by){
-  for(let i=0;i<22;i++)snowBits.push({x:bx+(Math.random()-.5)*10,y:by+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:10+Math.random()*30,life:0,max:1+Math.random()*.8});
-}
-function stepBranches(dt,k,c){
-  const n=branchLevel();
-  for(let i=0;i<n;i++){
-    if(state.branchShaken.includes(i))continue;
-    const [bx,by]=TREE_BRANCHES[i],x=bx*k,y=by*k;
-    for(let j=0;j<5;j++){const ang=j*1.4+i,rx=Math.cos(ang)*5*k,ry=Math.sin(ang)*3*k;
-      c.fillStyle='rgba(235,240,245,.85)';c.fillRect(x+rx-1,y+ry-1,3,3)}
-  }
-  for(const p of snowBits){p.life+=dt;p.vy+=40*dt;p.x+=p.vx*dt;p.y+=p.vy*dt}
-  snowBits=snowBits.filter(p=>p.life<=p.max);
-  for(const p of snowBits){const a=Math.max(0,1-p.life/p.max);
-    c.fillStyle=`rgba(255,255,255,${(a*.9).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
-}
-
-/* ---- the wind: swipe the cursor back and forth over the snow fast enough to shed a few wake swirls (see stirSnow/vort above) ---- */
-function checkWindSecret(){if(!state.secrets.wind&&vort.length>=3)unlockSecret('wind')}
-
-/* called once per frame from frame(), after the ambient snow/steam are drawn */
-function stepSecrets(dt,k,c){
-  checkWindSecret();
-  if(PORT)return;                       // the room's extra props are landscape-only for now
-  drawStar(c,k);stepGlobe(dt,k,c);stepBranches(dt,k,c);
-}
-/* a click in the scene: returns true if it hit something, so the caller skips the usual "advance the dialogue" */
+/* a click in the scene: true if a prop took it (then it does not also advance the dialogue) */
 function sceneClick(e){
   if(PORT||!box.s)return false;
-  const lx=(e.clientX-box.left)/box.s,ly=(e.clientY-box.top)/box.s;
-  if(lx<0||ly<0||lx>LW||ly>LH)return false;
-  return tryStar(lx,ly)||tryGlobe(lx,ly)||tryBranch(lx,ly)||tryLamp(lx,ly);
+  const x=(e.clientX-box.left)/box.s,y=(e.clientY-box.top)/box.s;
+  return x>=0&&y>=0&&x<=LW&&y<=LH&&PROPS.some(p=>p.click(x,y));
 }
 
 /* =====================================================================
@@ -1236,7 +1212,7 @@ if(CONFIG.allowDebug){
   box.appendChild(mk('h4',null,'FINDINGS'));
   FIND.forEach(f=>box.appendChild(btn(f.key.toUpperCase(),()=>unlockSecret(f.key))));
   box.appendChild(btn('OPEN',openFinds));
-  box.appendChild(btn('RESET',()=>{state.secrets={};state.findSeen=[];starLit=false;save();updateFindsBtn()}));
+  box.appendChild(btn('RESET',()=>{state.secrets={};state.findSeen=[];save();updateFindsBtn()}));
   box.appendChild(mk('h4',null,'WHILE PLAYING'));
   box.appendChild(btn('NEXT DATE ⏭',dbgJump));
   box.appendChild(btn('SKIP QUIET MOMENT',()=>{if(quietLeft>0)quietLeft=.001}));

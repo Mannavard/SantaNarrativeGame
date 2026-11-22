@@ -30,6 +30,18 @@ All stage pictures are one 1536x1024 frame. Helper scripts (Python 3 + `pip inst
   Until these two files exist the gift is simply not shown. Then tune `CONFIG.gift` (`lidFit`, `rim`) by eye. The reveal that rises from the box is `public/img/heart.png` (placeholder, `tools/make_heart.py`).
 Keep the same camera in every picture, keep the clock screen dark (the page draws live digits there) and the bottom ~15% dark (the dialogue sits there).
 
+## Findings (secrets in the room)
+Small things that answer a click while the player waits between stops (on a computer; not on phones yet): the star on the
+little tree, the snow globe, snow on the big tree's branches (one more branch each day from stop II), and a fast swipe of the
+cursor through the snow. Each one is a finding: its card flies in, turns over and flies into the cards button (top right),
+which opens the collection of six. The lamp just blinks when clicked.
+- Art: `public/img/findings/` — `back.png` (shared card back) and one picture per finding (`wind.png`, `branch.png`, `globe.png`,
+  `star.png`, `f5.png`, `f6.png`), 2:3, e.g. 400x600. A missing file is drawn as a placeholder.
+- Order and file names: `CONFIG.findings`; names on the cards: `TX.<lang>.findings`.
+- A new secret: add its entry to `CONFIG.findings.list` and its name to `TX`, then a prop to `PROPS` in `game.js`
+  (`click(x,y)` returns true when the click is its and calls `unlockSecret('<key>')`; optional `draw(c,k)`). Slots 5 and 6 are free.
+- Testing: the debug panel has a FINDINGS row (unlock any one, open the collection, reset).
+
 ## Music
 Put the track at `public/audio/music.mp3` (settings in `CONFIG.music`). It starts on the first tap of the start screen and fades in; a button top-right switches it off. No file = no music, no button. Restart `npm start` after adding a new file to `public/`.
 
