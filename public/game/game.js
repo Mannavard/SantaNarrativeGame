@@ -16,8 +16,6 @@ const OCCP={
   globeA:{circle:[400,1352,78]},          // the snow globe on stage 4
   globeB:{circle:[397,1357,74]},          // ... and on stage 5 (it sits slightly differently in that picture)
 };
-// Where the snow sits on the big tree's branches (see SECRETS): the same in every landscape picture, the tree does not move.
-const TREE_BRANCHES=[[345,75],[515,100],[650,130],[790,162],[875,200]];
 const CONFIG={
   // When each stop opens (local time of the visitor). Stops stay open once they have opened.
   // Stop I opens right after the player says "yes" (so its date is in the past on purpose); the others open on their dates.
@@ -43,10 +41,11 @@ const CONFIG={
     {src:'img/stage1.webp',p:{src:'img/stage1-portrait.webp',lamp:[719,771],cup:[315,1352],glass:[145,112,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
     {src:'img/stage2.webp',p:{src:'img/stage2-portrait.webp',lamp:[721,783],cup:[315,1357],glass:[145,118,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
     {src:'img/stage3.webp',p:{src:'img/stage3-portrait.webp',lamp:[712,802],cup:[243,1366],glass:[100,245,795,1300],occ:[]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1190,248],tilt:.4,occ:[OCC.books,OCC.clockBtn]},
-    {src:'img/stage4.webp',p:{src:'img/stage4-portrait.webp',lamp:[714,723],cup:[220,1360],glass:[115,112,785,1302],occ:[OCCP.globeA]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn],star:[695,362]},
+    // star = the tree's star (masked until clicked), globe = the snow globe's glass [centre x, y, radius, the snow at its bottom (y)]
+    {src:'img/stage4.webp',p:{src:'img/stage4-portrait.webp',lamp:[714,723],cup:[220,1360],glass:[115,112,785,1302],occ:[OCCP.globeA],star:[327,877],globe:[398,1350,76,1398]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn],star:[695,362],globe:[628,663,77,702]},
     // Stage 5+ are warm-toned, so they carry a colour theme for the live layers:
     //   screen = colour of the clock screen, digit/unlit = lit and unlit segments, glow = lamp glow, tint = snow colour multiplier
-    {src:'img/stage5.webp',p:{src:'img/stage5-portrait.webp',lamp:[710,790],cup:[225,1364],glass:[100,215,792,1298],occ:[OCCP.globeB]},cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78],star:[662,380]},
+    {src:'img/stage5.webp',p:{src:'img/stage5-portrait.webp',lamp:[710,790],cup:[225,1364],glass:[100,215,792,1298],occ:[OCCP.globeB],star:[327,947],globe:[401,1364,75,1399]},globe:[628,663,77,702],cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78],star:[662,380]},
   ],
   // The gift (box + lid cut by tools/prep_gift.py, heart by tools/make_heart.py - swap img/heart.png for the real reveal).
   // Everything is in the 1536x1024 frame / as fractions of the box:  x,y = centre of the box's base on the sill, w = box width;
@@ -342,11 +341,13 @@ function layout(){
   let s,left,top;
   if(PORT){const pf=CONFIG.portrait,room=clamp(vh*.27,150,pf.dialogMax);     // phones: the whole window, from under the stepper to just above the dialogue
     s=Math.max(.05,Math.min(vw/LW,(vh-topInset-16-room)/pf.fitY));left=(vw-LW*s)/2;top=topInset}
-  else{s=Math.max(.05,Math.min(vw/LW,(vh-topInset)/LH));left=(vw-LW*s)/2;top=topInset}      // never <=0 (a hidden or zero-height window)
+  else{const room=clamp(vh*.3,150,240);      // the dialogue and the quiet moment get the bottom of the screen: the picture ends above them, only its dark bottom 15% may run under the text
+    s=Math.max(.05,Math.min(vw/LW,(vh-topInset)/LH,(vh-topInset-room)/(LH*.85)));left=(vw-LW*s)/2;top=topInset}      // never <=0 (a hidden or zero-height window)
   box={s,left,top,w:LW*s,h:LH*s,P:Math.max(2,Math.round(3*s))};
   imgsEl.style.left=left+'px';imgsEl.style.top=top+'px';imgsEl.style.width=box.w+'px';imgsEl.style.height=box.h+'px';
   fx.style.left=left+'px';fx.style.top=top+'px';fx.style.width=box.w+'px';fx.style.height=box.h+'px';
   fx.width=Math.ceil(box.w/box.P);fx.height=Math.ceil(box.h/box.P);
+  const hi=$('#fxHi');Object.assign(hi.style,{left:left+'px',top:top+'px',width:box.w+'px',height:box.h+'px'});hi.width=Math.round(box.w*dpr);hi.height=Math.round(box.h*dpr);
   const g=PORT?CONFIG.portrait.glass:CONFIG.glass,k=s/box.P;glass={x:g[0]*k,y:g[1]*k,w:(g[2]-g[0])*k,h:(g[3]-g[1])*k};
   flakes=[];const n=Math.round(glass.w*glass.h/105);
   for(let i=0;i<n;i++)flakes.push({x:Math.random()*glass.w,y:Math.random()*glass.h,z:Math.random(),ph:Math.random()*6.28,vx:0,vy:0});
@@ -613,7 +614,7 @@ function frame(ts){
   flick=(1+.03*Math.sin(t*9)+.02*Math.sin(t*21))*(1-(lampPower>.5?dip:0));
   breathA+=((quietActive?1:0)-breathA)*Math.min(1,dt*1.2);
   const bm=1-.16*breathA*(.5-.5*Math.cos(t*Math.PI/4));                  // the lamp breathes during the pause for thinking: 8 s, dims by up to 16%
-  const b=.1+.9*clamp(lampPower,0,1)*bm;if(Math.abs(b-lastBright)>.006){lastBright=b;const f=`brightness(${b.toFixed(3)})`;imgsEl.style.filter=f;giftLayer.style.filter=b>.995?'none':f}
+  const b=.1+.9*clamp(lampPower,0,1)*bm;if(Math.abs(b-lastBright)>.006){lastBright=b;const f=`brightness(${b.toFixed(3)})`;imgsEl.style.filter=hiEl.style.filter=f;giftLayer.style.filter=b>.995?'none':f}
   if(quietLeft>0){
     quietLeft-=FAST?dt*8:dt;
     if(quietLeft<=0){quietLeft=0;if(quietRes){const r=quietRes;quietRes=null;r()}}
@@ -655,7 +656,7 @@ function frame(ts){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;c.fillStyle=`rgba(255,${p.g},120,${Math.min(1,p.life/p.max*1.6).toFixed(2)})`;
     const z=p.big?2:1;c.fillRect(Math.round(p.x),Math.round(p.y),z,z);if(p.big){c.fillRect(Math.round(p.x)-1,Math.round(p.y),1,1);c.fillRect(Math.round(p.x)+2,Math.round(p.y),1,1)}}
-  stepRoom(dt,k,c);
+  stepRoom(dt);
   drawClock();
 }
 
@@ -819,68 +820,175 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&findsOpen){e.preven
 updateFindsBtn();
 
 /* =====================================================================
-   SECRETS — things in the room that answer a click (landscape only for now).
-   A prop is {click(x,y), draw(c,k)}: click gets logical-frame coordinates and returns true if the click was its
-   (it then does its thing and unlocks its finding), draw paints it on the overlay every frame. Earlier in PROPS wins.
+   SECRETS — things in the room that answer a click.
+   They are drawn on their own full-resolution canvas (#fxHi, dimmed with the picture), in logical-frame px.
+   A prop is {click(x,y), draw(c,dt)}: click returns true if the click was its (it then does its thing and unlocks its
+   finding), draw paints it every frame. Earlier in PROPS wins.
    ===================================================================== */
 const near=(x,y,[px,py],r)=>Math.hypot(x-px,y-py)<=r;
-
-/* small white snow bits (shaken off a branch, swirling in the globe), in logical-frame px.
-   g = gravity, drag = share of the sideways speed left after a second, fade = seconds of fading out at the end of life,
-   inside = [x,y,r]: kept in that circle (the globe's glass), losing half the speed into the wall */
-let bits=[];
-const addBit=o=>bits.push({vx:0,vy:0,g:0,drag:1,life:0,max:1,fade:.6,...o});
-function stepBits(dt,k,c){
-  for(const p of bits){
-    p.life+=dt;p.vy+=p.g*dt;p.vx*=Math.pow(p.drag,dt);p.x+=p.vx*dt;p.y+=p.vy*dt;
-    if(p.inside){const [cx,cy,r]=p.inside,dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy);
-      if(d>r){const nx=dx/d,ny=dy/d;p.x=cx+nx*r;p.y=cy+ny*r;p.vx-=nx*Math.abs(p.vx)*.5;p.vy-=ny*Math.abs(p.vy)*.5}}
-  }
-  bits=bits.filter(p=>p.life<=p.max);if(bits.length>240)bits.splice(0,bits.length-240);
-  for(const p of bits){c.fillStyle=`rgba(255,255,255,${(.9*Math.min(1,(p.max-p.life)/p.fade)).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
+const hiEl=$('#fxHi'),hctx=hiEl.getContext('2d');
+const css=px=>px/box.s;                                    // a size in screen px, in logical px
+const lumAt=(d,i)=>.299*d[i]+.587*d[i+1]+.114*d[i+2];
+function pixelsOf(img,x,y,w,h){                            // a region of a stage picture (its natural size is the logical frame)
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(img,-x,-y);return{cv,g,img:g.getImageData(0,0,w,h)};
 }
-function glow(c,x,y,r,rgba){const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,rgba);g.addColorStop(1,rgba.replace(/[\d.]+\)$/,'0)'));c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2)}
+const pictureReady=()=>imgA.complete&&imgA.naturalWidth&&imgA.getAttribute('src')===meta.src;
 
-/* the star on top of the little tree (stages whose picture has one, CONFIG.stages[].star): masked dark until clicked, then lit for good */
+/* chunks and powder falling off a shaken branch. g = gravity, fade = seconds of fading out at the end of life, size in screen px */
+let bits=[];
+const addBit=o=>bits.push({vx:0,vy:0,g:0,life:0,max:1,fade:.6,size:2,col:'#fff',...o});
+function stepBits(dt,c){
+  for(const p of bits){p.life+=dt;p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt}
+  bits=bits.filter(p=>p.life<=p.max);if(bits.length>400)bits.splice(0,bits.length-400);
+  for(const p of bits){c.globalAlpha=Math.min(1,(p.max-p.life)/p.fade);c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,css(p.size)/2,0,6.283);c.fill()}
+  c.globalAlpha=1;
+}
+
+/* the star on top of the little tree (stages whose picture has one, CONFIG.stages[].star). Unlit until clicked: whatever is
+   brighter than the sky around it is pulled down towards the sky, so the star stays as a dull grey shape without its glow. */
 let starLitAt=-99;
+const unlitStar={key:'',cv:null,R:0};
+function makeUnlitStar(){
+  const [cx,cy]=meta.star,R=36,S=Math.round(R*1.7),{cv,g,img}=pixelsOf(imgA,Math.round(cx-S),Math.round(cy-S),S*2,S*2),d=img.data,W=S*2;
+  const ring=[];for(let a=0;a<16;a++){const an=Math.PI*(1.15+a*.7/15),x=Math.round(S+R*1.6*Math.cos(an)),y=Math.round(S+R*1.6*Math.sin(an));ring.push((y*W+x)*4)}   // the upper half: sky, not the tree
+  ring.sort((a,b)=>lumAt(d,a)-lumAt(d,b));const si=ring[ring.length>>1],sky=[d[si],d[si+1],d[si+2]],skyL=lumAt(d,si);
+  for(let y=0;y<W;y++)for(let x=0;x<W;x++){
+    const r=Math.hypot(x-S,y-S)/R;if(r>=1){d[(y*W+x)*4+3]=0;continue}
+    const i=(y*W+x)*4,gl=lumAt(d,i)-skyL,u=clamp((1-r)/.65,0,1),w=u*u*(3-2*u);          // full inside 35% of R, then a smooth edge
+    if(gl>0)for(let j=0;j<3;j++)d[i+j]+=(sky[j]+gl*.22-d[i+j])*w;
+    d[i+3]=255*Math.min(1,w*3);
+  }
+  g.putImageData(img,0,0);unlitStar.cv=cv;unlitStar.R=S;
+}
 const starProp={
-  click(x,y){if(!meta.star||state.secrets.star||!near(x,y,meta.star,34))return false;starLitAt=t;unlockSecret('star');return true},
-  draw(c,k){
-    if(!meta.star)return;const x=meta.star[0]*k,y=meta.star[1]*k;
-    if(!state.secrets.star){glow(c,x,y,26*k,'rgba(8,10,16,.95)');return}
-    const age=t-starLitAt,fl=age<2.2?.6+.4*Math.sin(age*26):1;          // a short flicker as it catches
-    c.globalCompositeOperation='lighter';glow(c,x,y,42*k,`rgba(255,235,180,${(.38*fl).toFixed(3)})`);c.globalCompositeOperation='source-over';
+  click(x,y){if(!meta.star||state.secrets.star||!near(x,y,meta.star,30))return false;starLitAt=t;unlockSecret('star');return true},
+  draw(c){
+    if(!meta.star||!pictureReady())return;const [x,y]=meta.star;
+    if(!state.secrets.star){
+      const key=meta.src;if(unlitStar.key!==key){makeUnlitStar();unlitStar.key=key}
+      const S=unlitStar.R;c.drawImage(unlitStar.cv,x-S,y-S,S*2,S*2);return;
+    }
+    const age=t-starLitAt;if(age>3)return;                                           // catching light: a few flickers, then the picture's own glow
+    const fl=Math.max(0,1-age/3)*(.55+.45*Math.sin(age*24));
+    const g=c.createRadialGradient(x,y,0,x,y,40);g.addColorStop(0,`rgba(255,232,170,${(.5*fl).toFixed(3)})`);g.addColorStop(1,'rgba(255,232,170,0)');
+    c.globalCompositeOperation='lighter';c.fillStyle=g;c.fillRect(x-40,y-40,80,80);c.globalCompositeOperation='source-over';
   },
 };
 
-/* the snow globe (stages that have it): a shake swirls the snow inside, which then settles */
+/* the snow globe (stages that have it, CONFIG.stages[].globe = [x,y,radius,the snow at its bottom]): a shake throws fine snow
+   off the bottom, the water keeps turning for a while, then the flakes sink slowly and settle back into the painted snow */
+const globeSnow={flakes:[],swirl:0,dir:1};
 const globeProp={
   click(x,y){
-    const [gx,gy,gr]=OCC.globe.circle;
-    if(!meta.occ.includes(OCC.globe)||!near(x,y,[gx,gy],gr+14))return false;
-    for(let i=0;i<26;i++){const a=Math.random()*6.283,r=Math.random()*gr*.75;
-      addBit({x:gx+Math.cos(a)*r,y:gy+Math.sin(a)*r,vx:(Math.random()-.5)*34,vy:-10-Math.random()*30,g:18,drag:.2,max:2.6+Math.random()*1.4,inside:[gx,gy,gr-3]})}
+    const G=meta.globe;if(!G||!near(x,y,G,G[2]+16))return false;
+    const [gx,,r,ground]=G,S=globeSnow;
+    S.swirl=Math.min(1.6,S.swirl+1);S.dir=Math.random()<.5?-1:1;
+    for(const f of S.flakes){f.rest=0;f.vy-=40+Math.random()*60;f.vx+=(Math.random()-.5)*50}       // the ones still in the water go up again
+    for(let i=Math.min(90,220-S.flakes.length);i>0;i--)
+      S.flakes.push({x:gx+(Math.random()*2-1)*r*.75,y:ground-1-Math.random()*10,vx:(Math.random()-.5)*140,vy:-30-Math.random()*150,z:Math.random(),age:0,rest:0});
     unlockSecret('globe');return true;
+  },
+  draw(c,dt){
+    const G=meta.globe,S=globeSnow;if(!G){S.flakes.length=0;return}
+    const [gx,gy,r,ground]=G,R=r-6,drag=Math.exp(-dt*1.8);
+    S.swirl*=Math.exp(-dt*.9);
+    for(const f of S.flakes){
+      f.age+=dt;if(f.rest){f.rest+=dt;continue}
+      const dx=f.x-gx,dy=f.y-gy,d=Math.hypot(dx,dy)||1,a=S.swirl*S.dir*130*d/r;
+      f.vx+=(-dy/d*a+(Math.random()-.5)*30)*dt;f.vy+=(dx/d*a+22-S.swirl*28)*dt;      // the turning water, a little jitter, slow sinking (lifted while it turns)
+      f.vx*=drag;f.vy*=drag;f.x+=f.vx*dt;f.y+=f.vy*dt;
+      const ex=f.x-gx,ey=f.y-gy,e=Math.hypot(ex,ey);
+      if(e>R){const nx=ex/e,ny=ey/e,vn=f.vx*nx+f.vy*ny;f.x=gx+nx*R;f.y=gy+ny*R;if(vn>0){f.vx-=1.3*vn*nx;f.vy-=1.3*vn*ny}}
+      if(f.y>=ground-1){f.y=ground-1;if(f.vy>0&&S.swirl<.25)f.rest=.001;else if(f.vy>0)f.vy*=-.3}
+    }
+    S.flakes=S.flakes.filter(f=>f.rest<2.5&&f.age<16);
+    c.fillStyle='#fff';
+    for(const f of S.flakes){
+      const s=css(.9+f.z*.9);c.globalAlpha=(f.rest?1-f.rest/2.5:1)*(.7+.3*f.z);c.fillRect(f.x-s/2,f.y-s/2,s,s);   // fine points, 1-2 screen px
+    }
+    c.globalAlpha=1;
   },
 };
 
-/* snow on the big tree's branches: one more branch each day from stop II, a shaken branch stays bare until the next day */
-function snowyBranches(){
+/* new snow on the branches. Where it can lie is read from the picture: the top edge of the snow already on the branches
+   (light, not too coloured, clearly darker just above), in the upper half of the window, chained into near-horizontal runs
+   (snow does not stay on steep twigs). From stop II each run gets a cushion of snow, thicker each day, in the picture's own
+   snow colour, rounded at the ends. A click on a cushion shakes it off until the next day. */
+const DRIFT_DEPTH=[0,0,4,7,10,13];                         // logical px of new snow by state.entered (none on the first day)
+const drifts={};                                          // per picture: {runs:[[x,y],...][], col:[r,g,b]}
+const driftDepth=()=>DRIFT_DEPTH[clamp(state.entered,0,5)];
+function shakenHere(){                                     // today's shaken cushions of the current picture
   if(state.branchShakenDay!==state.entered){state.branchShakenDay=state.entered;state.branchShaken=[]}
-  return TREE_BRANCHES.slice(0,clamp(state.entered-1,0,TREE_BRANCHES.length)).map((p,i)=>i).filter(i=>!state.branchShaken.includes(i));
+  return state.branchShaken.filter(s=>s.src===meta.src).map(s=>s.i);
 }
+function findDrifts(){
+  const D=.5,gl=meta.glass||CONFIG.glass,away=[[meta.lamp,100],[meta.star,40]].filter(a=>a[0]);
+  const X0=gl[0]+40,Y0=gl[1]+30,X1=gl[2]-40,Y1=gl[1]+(gl[3]-gl[1])*.52;
+  const w=Math.round((X1-X0)*D),h=Math.round((Y1-Y0)*D),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(imgA,X0,Y0,X1-X0,Y1-Y0,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data,L=(x,y)=>lumAt(d,(y*w+x)*4),colsByX=[],snow=[];
+  for(let x=0;x<w;x++){const ys=[];colsByX.push(ys);
+    for(let y=2;y<h-2;y++){
+      const i=(y*w+x)*4,l=L(x,y),mx=Math.max(d[i],d[i+1],d[i+2]);
+      if(l<95||(mx-Math.min(d[i],d[i+1],d[i+2]))/(mx+1)>.55)continue;
+      if(l-L(x,y-1)<30&&l-L(x,y-2)<45)continue;                                     // a top edge: clearly darker just above
+      if(L(x,y+2)<l*.55)continue;                                                   // with snow under it, not a one-pixel star
+      const lx=X0+x/D,ly=Y0+y/D;if(away.some(([p,r])=>near(lx,ly,p,r)))continue;
+      ys.push(y);snow.push([d[i],d[i+1],d[i+2],l]);
+    }}
+  let runs=[],active=[];                                   // chain the edges left to right, one pixel up or down per column at most
+  for(let x=0;x<w;x++){
+    const next=[],used=new Set();
+    for(const run of active){
+      const [lx,ly]=run[run.length-1];let best=null;
+      for(const y of colsByX[x])if(!used.has(y)&&Math.abs(y-ly)<=1&&(best===null||Math.abs(y-ly)<Math.abs(best-ly)))best=y;
+      if(best!==null){run.push([x,best]);used.add(best);next.push(run)}else if(x-lx<=2)next.push(run);else runs.push(run);
+    }
+    for(const y of colsByX[x])if(!used.has(y))next.push([[x,y]]);
+    active=next;
+  }
+  runs=runs.concat(active).filter(r=>r[r.length-1][0]-r[0][0]>=10).map(r=>{   // fill the gaps, smooth, to logical px
+    const at={};for(const [x,y] of r)at[x]=y;const ys=[];let last=r[0][1];
+    for(let x=r[0][0];x<=r[r.length-1][0];x++){last=at[x]??last;ys.push(last)}
+    return ys.map((_,i)=>{const s=ys.slice(Math.max(0,i-3),i+4);return[X0+(r[0][0]+i)/D,Y0+s.reduce((a,b)=>a+b,0)/s.length/D]});
+  });
+  const top=snow.sort((a,b)=>b[3]-a[3]).slice(0,Math.max(1,snow.length>>2));        // the snow's colour: its brightest quarter, a bit closer to white (the lamp tints it)
+  return{runs,col:[0,1,2].map(j=>(top.length?top.reduce((s,c)=>s+c[j],0)/top.length:235)*.7+[238,240,244][j]*.3)};
+}
+function cushionTop(run,depth,seed){
+  const n=run.length,h0=Math.min(depth,(run[n-1][0]-run[0][0])*.22);
+  return run.map(([x,y],i)=>{const taper=Math.pow(Math.sin(Math.PI*i/(n-1)),.55),wob=.86+.12*Math.sin(x*.09+seed)+.06*Math.sin(x*.23+seed*2)+.04*Math.sin(x*.71+seed*3);
+    return[x,y-h0*taper*wob+.5]});
+}
+const rgb=(c,m,a,al=1)=>`rgba(${Math.min(255,c[0]*m+a)|0},${Math.min(255,c[1]*m+a)|0},${Math.min(255,c[2]*m+a)|0},${al})`;
 const branchProp={
   click(x,y){
-    const i=snowyBranches().find(i=>near(x,y,TREE_BRANCHES[i],38));if(i===undefined)return false;
-    state.branchShaken.push(i);save();
-    const [bx,by]=TREE_BRANCHES[i];
-    for(let j=0;j<22;j++){const max=1+Math.random()*.8;addBit({x:bx+(Math.random()-.5)*10,y:by+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:10+Math.random()*30,g:40,max,fade:max})}
-    unlockSecret('branch');return true;
+    const depth=driftDepth(),dr=drifts[meta.src];if(!depth||!dr)return false;
+    const shaken=shakenHere(),dist=run=>Math.min(...run.map(([px,py])=>Math.hypot(px-x,py-depth/2-y)));
+    const hits=dr.runs.map((run,i)=>[i,dist(run)]).filter(([i,e])=>!shaken.includes(i)&&e<60);     // the part of the branch around the click
+    if(!hits.some(([,e])=>e<22+depth/2))return false;                                                // ... but only if the click was on snow
+    const col=rgb(dr.col,1,6);
+    for(const [i] of hits){
+      state.branchShaken.push({src:meta.src,i});
+      cushionTop(dr.runs[i],depth,i*1.7).forEach(([px,py],j)=>{if(j%3)return;const by=dr.runs[i][j][1];
+        addBit({x:px,y:py+(by-py)*Math.random(),vx:(Math.random()-.5)*30,vy:Math.random()*25,g:420,max:.7+Math.random()*.5,fade:.25,size:2+Math.random()*2.5,col});   // chunks
+        addBit({x:px,y:py,vx:(Math.random()-.5)*40,vy:-5+Math.random()*15,g:35,max:1.2+Math.random(),fade:1,size:1+Math.random(),col:'#fff'});                   // powder
+      });
+    }
+    save();unlockSecret('branch');return true;
   },
-  draw(c,k){
-    c.fillStyle='rgba(235,240,245,.85)';
-    for(const i of snowyBranches()){const x=TREE_BRANCHES[i][0]*k,y=TREE_BRANCHES[i][1]*k;
-      for(let j=0;j<5;j++){const a=j*1.4+i;c.fillRect(x+Math.cos(a)*5*k-1,y+Math.sin(a)*3*k-1,3,3)}}
+  draw(c){
+    const depth=driftDepth();if(!depth||!pictureReady())return;
+    const dr=drifts[meta.src]||(drifts[meta.src]=findDrifts()),shaken=shakenHere();
+    const body=rgb(dr.col,.98,4),hi=rgb(dr.col,1.08,24),shade=rgb(dr.col,.55,0,.55);
+    dr.runs.forEach((run,i)=>{
+      if(shaken.includes(i))return;const top=cushionTop(run,depth,i*1.7);
+      c.beginPath();top.forEach(([x,y],j)=>j?c.lineTo(x,y):c.moveTo(x,y));for(let j=run.length-1;j>=0;j--)c.lineTo(run[j][0],run[j][1]+1.5);c.closePath();
+      c.fillStyle=body;c.fill();
+      c.lineWidth=css(1.2);c.strokeStyle=shade;c.beginPath();run.forEach(([x,y],j)=>j?c.lineTo(x,y+1.2):c.moveTo(x,y+1.2));c.stroke();   // a soft underside
+      c.strokeStyle=hi;c.beginPath();top.forEach(([x,y],j)=>j?c.lineTo(x,y):c.moveTo(x,y));c.stroke();                                 // the lit top
+    });
   },
 };
 
@@ -897,16 +1005,17 @@ const lampProp={
 
 const PROPS=[starProp,globeProp,branchProp,lampProp];
 
-/* called once per frame from frame(), after the ambient snow and steam */
-function stepRoom(dt,k,c){
+/* called once per frame from frame() */
+function stepRoom(dt){
   if(!state.secrets.wind&&vort.length>=3)unlockSecret('wind');      // the wind: a fast swipe back and forth sheds a few wake swirls at once (stirSnow)
-  if(PORT)return;
-  for(const p of PROPS)if(p.draw)p.draw(c,k);
-  stepBits(dt,k,c);
+  const c=hctx,S=box.s*dpr;
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,hiEl.width,hiEl.height);c.setTransform(S,0,0,S,0,0);
+  for(const p of PROPS)if(p.draw)p.draw(c,dt);
+  stepBits(dt,c);
 }
 /* a click in the scene: true if a prop took it (then it does not also advance the dialogue) */
 function sceneClick(e){
-  if(PORT||!box.s)return false;
+  if(!box.s)return false;
   const x=(e.clientX-box.left)/box.s,y=(e.clientY-box.top)/box.s;
   return x>=0&&y>=0&&x<=LW&&y<=LH&&PROPS.some(p=>p.click(x,y));
 }

@@ -14,6 +14,7 @@ button{font:inherit;color:inherit}
 #imgs img,#imgs canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 #dis{display:none}
 #fx{position:absolute;image-rendering:pixelated;pointer-events:none}
+#fxHi{position:absolute;pointer-events:none}      /* full resolution: the room's props (snow on the branches, the globe's snow, the star) */
 #clk{position:absolute;pointer-events:none}
 #giftLayer{position:absolute;inset:0;pointer-events:none}      /* dimmed together with the picture (same brightness as #imgs) */
 #gift{--hy:-215%;position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none;filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}
@@ -194,10 +195,10 @@ button{font:inherit;color:inherit}
 #quiet{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:7;width:min(780px,calc(100vw - 32px));padding:6px 8px;text-align:center;opacity:0;pointer-events:none;transition:opacity 1.4s}
 #quiet.on{opacity:1}
 #qQ{font-size:clamp(20px,2.4vw,28px);line-height:1.2;color:#8c8c8c}
-#qS{margin-top:12px;min-height:1.2em;font-size:clamp(26px,3.4vw,38px);line-height:1.15;color:#ece1c3;opacity:0;transition:opacity .7s}
-#qCue{margin-top:6px;min-height:1.2em;font-size:clamp(20px,2.4vw,26px);color:#b2b2b2;opacity:0;transition:opacity .7s}
+#qS{margin-top:8px;min-height:1.2em;font-size:clamp(26px,3.4vw,38px);line-height:1.15;color:#ece1c3;opacity:0;transition:opacity .7s}
+#qCue{margin-top:2px;min-height:1.2em;font-size:clamp(20px,2.4vw,26px);color:#b2b2b2;opacity:0;transition:opacity .7s}
 #qS.on,#qCue.on{opacity:1}
-.qbtns{display:flex;gap:14px;justify-content:center;margin-top:12px;min-height:50px}
+.qbtns{display:flex;gap:14px;justify-content:center;margin-top:8px;min-height:50px}
 .qbtns button{opacity:0;pointer-events:none;transition:opacity .8s}
 .qbtns button.on{opacity:1;pointer-events:auto}
 @media (max-height:480px),(max-width:699px){.qbtns{min-height:42px;margin-top:8px}.qbtns .pxbtn{padding:8px 14px;font-size:20px}#qS{margin-top:8px}}
