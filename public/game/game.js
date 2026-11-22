@@ -883,14 +883,17 @@ const starProp={
 
 /* the snow globe (stages that have it, CONFIG.stages[].globe = [x,y,radius,the snow at its bottom]): a shake throws fine snow
    off the bottom, the water keeps turning for a while, then the flakes sink slowly and settle back into the painted snow */
+const GLOBE_PER_SHAKE=99,GLOBE_MAX=600;                  // flakes thrown up by one shake; the most in the water at once (about six shakes in a row still add snow)
+const GLOBE_REST_FADE=1.5,GLOBE_LIFE=18,GLOBE_AGE_FADE=3; // seconds: the last of the fade once settled; the longest life, and the fade before it
+const GLOBE_SNOW_BAND=12;                                 // logical px above the painted snow over which a flake melts into it (and comes out of it on a shake)
 const globeSnow={flakes:[],swirl:0,dir:1};
 const globeProp={
   click(x,y){
     const G=meta.globe;if(!G||!near(x,y,G,G[2]+16))return false;
     const [gx,,r,ground]=G,S=globeSnow;
-    S.swirl=Math.min(1.6,S.swirl+1);S.dir=Math.random()<.5?-1:1;
+    S.swirl=Math.min(2.2,S.swirl+1);S.dir=Math.random()<.5?-1:1;
     for(const f of S.flakes){f.rest=0;f.vy-=40+Math.random()*60;f.vx+=(Math.random()-.5)*50}       // the ones still in the water go up again
-    for(let i=Math.min(90,220-S.flakes.length);i>0;i--)
+    for(let i=Math.min(GLOBE_PER_SHAKE,GLOBE_MAX-S.flakes.length);i>0;i--)
       S.flakes.push({x:gx+(Math.random()*2-1)*r*.75,y:ground-1-Math.random()*10,vx:(Math.random()-.5)*140,vy:-30-Math.random()*150,z:Math.random(),age:0,rest:0});
     unlockSecret('globe');return true;
   },
@@ -907,10 +910,11 @@ const globeProp={
       if(e>R){const nx=ex/e,ny=ey/e,vn=f.vx*nx+f.vy*ny;f.x=gx+nx*R;f.y=gy+ny*R;if(vn>0){f.vx-=1.3*vn*nx;f.vy-=1.3*vn*ny}}
       if(f.y>=ground-1){f.y=ground-1;if(f.vy>0&&S.swirl<.25)f.rest=.001;else if(f.vy>0)f.vy*=-.3}
     }
-    S.flakes=S.flakes.filter(f=>f.rest<2.5&&f.age<16);
+    S.flakes=S.flakes.filter(f=>f.rest<GLOBE_REST_FADE&&f.age<GLOBE_LIFE);
     c.fillStyle='#fff';
     for(const f of S.flakes){
-      const s=css(.9+f.z*.9);c.globalAlpha=(f.rest?1-f.rest/2.5:1)*(.7+.3*f.z);c.fillRect(f.x-s/2,f.y-s/2,s,s);   // fine points, 1-2 screen px
+      const s=css(.9+f.z*.9),u=clamp(Math.min((ground-f.y)/GLOBE_SNOW_BAND,f.rest?1-f.rest/GLOBE_REST_FADE:1,(GLOBE_LIFE-f.age)/GLOBE_AGE_FADE),0,1);   // sinking into the painted snow, settled, or simply old: a smooth fade
+      c.globalAlpha=u*u*(3-2*u)*(.7+.3*f.z);c.fillRect(f.x-s/2,f.y-s/2,s,s);   // fine points, 1-2 screen px
     }
     c.globalAlpha=1;
   },
@@ -919,7 +923,7 @@ const globeProp={
 /* new snow on the branches. Where it can lie is read from the picture: the top edge of the snow already on the branches
    (light, not too coloured, clearly darker just above), in the upper half of the window, chained into near-horizontal runs
    (snow does not stay on steep twigs). From stop II each run gets a cushion of snow, thicker each day, in the picture's own
-   snow colour, rounded at the ends. A click on a cushion shakes it off until the next day. */
+   snow colour, rounded at the ends. A click on a cushion shakes it off until the next day; the finding comes when all of them are off. */
 const DRIFT_DEPTH=[0,0,4,7,10,13];                         // logical px of new snow by state.entered (none on the first day)
 const drifts={};                                          // per picture: {runs:[[x,y],...][], col:[r,g,b]}
 const driftDepth=()=>DRIFT_DEPTH[clamp(state.entered,0,5)];
@@ -981,7 +985,7 @@ const branchProp={
         addBit({x:px,y:py,vx:(Math.random()-.5)*40,vy:-5+Math.random()*15,g:35,max:1.2+Math.random(),fade:1,size:1+Math.random(),col:'#fff'});                   // powder
       });
     }
-    save();unlockSecret('branch');return true;
+    save();if(dr.runs.every((_,i)=>shakenHere().includes(i)))unlockSecret('branch');return true;   // the finding: only once the whole tree is clear
   },
   draw(c){
     const depth=driftDepth();if(!depth||!pictureReady())return;

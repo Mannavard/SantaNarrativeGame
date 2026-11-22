@@ -16,7 +16,7 @@ button{font:inherit;color:inherit}
 #fxHi{position:absolute;pointer-events:none}      /* full resolution: the room's props (snow on the branches, the globe's snow, the star) */
 #clk{position:absolute;pointer-events:none}
 #giftLayer{position:absolute;inset:0;pointer-events:none}      /* dimmed together with the picture (same brightness as #imgs) */
-#gift{--hy:-215%;position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none;filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}
+#gift{--hy:-215%;position:absolute;display:none;pointer-events:auto;transform-origin:50% 100%;outline:none}
 #gift.show{display:block}
 #gift.ready{cursor:pointer}
 #gift:focus-visible{outline:2px dashed var(--ink);outline-offset:6px}
@@ -30,7 +30,7 @@ button{font:inherit;color:inherit}
 #giftHint{position:absolute;display:none;pointer-events:none;transform:translateX(-50%);white-space:nowrap;font-family:var(--px);font-size:21px;letter-spacing:.08em;color:#ffe2a8;text-shadow:0 0 8px rgba(255,170,60,.8);animation:blink 1.1s steps(2) infinite}
 #giftHint.show{display:block}
 #gift.drop{animation:gdrop 1s cubic-bezier(.3,.7,.4,1) both}
-#gift.idle{animation:gglow 3.2s ease-in-out infinite}
+#gift.idle.ready{animation:gglow 3.2s ease-in-out infinite}      /* it glows only when it can be opened; before that a click just nudges it */
 #gift.nudge{animation:gnudge .45s linear}
 #gift.open{animation:none}
 #gift.open #giftLid{animation:lidoff 1.25s cubic-bezier(.5,0,.8,.5) forwards}
@@ -41,7 +41,7 @@ button{font:inherit;color:inherit}
 #gift.opened #giftLid{display:none}
 #gift.opened #heart{opacity:1;animation:heartfloat 3.4s ease-in-out infinite}
 @keyframes gdrop{0%{transform:translateY(-170%);opacity:0}40%{opacity:1}62%{transform:translateY(0)}78%{transform:translateY(-9%)}90%{transform:translateY(0)}100%{transform:translateY(0);opacity:1}}
-@keyframes gglow{0%,100%{filter:drop-shadow(0 0 6px rgba(255,160,50,.22))}50%{filter:drop-shadow(0 0 20px rgba(255,175,70,.7))}}
+@keyframes gglow{0%,100%{filter:drop-shadow(0 0 6px rgba(255,160,50,.12))}50%{filter:drop-shadow(0 0 20px rgba(255,175,70,.7))}}
 @keyframes gnudge{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px) rotate(-1.5deg)}50%{transform:translateX(4px) rotate(1.5deg)}80%{transform:translateX(-2px)}}
 @keyframes heartrise{0%{opacity:0;transform:translateY(60%) scale(.45)}12%{opacity:1}100%{opacity:1;transform:translateY(var(--hy)) scale(1)}}
 @keyframes lidoff{0%{transform:none;opacity:1}16%{transform:translateY(-6%) rotate(-1.5deg)}100%{transform:translate(48%,-78%) rotate(28deg);opacity:0}}
