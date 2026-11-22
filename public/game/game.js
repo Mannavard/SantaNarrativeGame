@@ -531,7 +531,10 @@ const WAKE_FROM=260,WAKE_FULL=950;                        // cursor speed (logic
 const sstep=(a,b,x)=>{const u=clamp((x-a)/(b-a),0,1);return u*u*(3-2*u)};                                          // radius of the cursor "body", logical px of the picture
 const wind={x:0,y:0,px:0,py:0,sp:0,t:0,on:false,side:1,acc:0};   // x,y = cursor now, px,py = where it was at the last frame, sp = smoothed speed (fx px/s)
 const vort=[];                                            // wake swirls: {x,y,g (circulation, sign = spin),rc (core radius),age}
-let steam=[],steamAcc=0;
+// steam over the mug: thin pixel strands that wave like a ribbon; the wave and the gaps near the top travel upward
+const STEAM=[{dx:-11,h:150,wl:70,amp:1,ph:0},{dx:12,h:125,wl:60,amp:.85,ph:2.6}];    // offsets, heights and wavelengths in logical px of the picture
+const STEAM_RISE=22;                                                              // how fast the wave climbs, logical px/s
+const hash1=n=>{n=Math.sin(n*12.9898)*43758.5453;return n-Math.floor(n)};
 addEventListener('pointermove',e=>{
   const x=(e.clientX-box.left)/box.P-glass.x,y=(e.clientY-box.top)/box.P-glass.y,now=performance.now();
   if(!wind.on){wind.px=x;wind.py=y;wind.sp=0}                  // (re)entering: no jump from the old place
@@ -627,15 +630,25 @@ function frame(ts){
     if(f.z>.9&&Math.sin(t*2.4+f.ph)>-.4){c.fillStyle=GR[i-1];c.fillRect(x-1,y,1,1);c.fillRect(x+1,y,1,1);c.fillRect(x,y-1,1,1);c.fillRect(x,y+1,1,1)}
     else if(f.z>.78){c.fillStyle=GR[i-1];c.fillRect(x+1,y,1,1)}
   }
-  // a faint wisp of steam over the mug: small, slow, barely there
-  if(meta.cup){
-    steamAcc+=dt*4.5;while(steamAcc>=1){steamAcc--;steam.push({x:meta.cup[0]+(Math.random()-.5)*30,y:meta.cup[1],age:0,life:4.5+Math.random()*2.5,vy:9+Math.random()*6,ph:Math.random()*6.28,w:2+Math.random()*2})}
-    const sl=clamp(lampPower,0,1),sc=meta.steam||'232,230,226';
-    for(let i=steam.length-1;i>=0;i--){const p=steam[i];p.age+=dt;if(p.age>=p.life){steam.splice(i,1);continue}
-      const u=p.age/p.life,a=.13*Math.sin(Math.PI*u)*Math.sin(Math.PI*u)*sl;
-      const sx=Math.round((p.x+Math.sin(p.age*1.1+p.ph)*(p.w+p.age*2.2))*k),sy=Math.round((p.y-p.age*p.vy)*k);
-      c.fillStyle=`rgba(${sc},${(a*.55).toFixed(3)})`;c.fillRect(sx-1,sy-1,3,3);
-      c.fillStyle=`rgba(${sc},${a.toFixed(3)})`;c.fillRect(sx,sy,2,2)}
+  // steam over the mug: two wavy strands, 2 px wide at the rim, 1 px higher up, breaking into dots at the top
+  if(meta.cup&&lampPower>.02){
+    const sl=clamp(lampPower,0,1),sc=meta.steam||'232,230,226',TAU=Math.PI*2;
+    STEAM.forEach((st,si)=>{
+      const bx=(meta.cup[0]+st.dx)*k,by=Math.round(meta.cup[1]*k)-1,H=Math.max(6,Math.round(st.h*k));
+      const life=.65+.35*Math.sin(t*.33+st.ph*1.7),lean=Math.sin(t*.21+st.ph)*8*k;   // each strand breathes and leans slowly
+      let px=null;
+      for(let j=0;j<H;j++){
+        const h=j/H,hl=j/k;
+        if(h>.45&&hash1(si*977+Math.floor(j-t*STEAM_RISE*k))<(h-.45)*1.5){px=null;continue}   // gaps that rise with the wave
+        const amp=(2+h*11)*st.amp*k;
+        const x=Math.round(bx+amp*Math.sin((hl-t*STEAM_RISE)*TAU/st.wl+st.ph)+lean*h*h);
+        const a=.4*sl*life*Math.min(1,h/.12+.15)*(1-h)**.7;
+        let x0=x,x1=x;if(px!==null){if(x>px)x0=px+1;else if(x<px)x1=px-1}         // join to the row below without doubling pixels
+        c.fillStyle=`rgba(${sc},${a.toFixed(3)})`;c.fillRect(x0,by-j,x1-x0+1,1);
+        if(h<.4){c.fillStyle=`rgba(${sc},${(a*.55).toFixed(3)})`;c.fillRect(x1+1,by-j,1,1)}   // a softer second column near the rim
+        px=x;
+      }
+    });
   }
   if(giftOpened&&Math.random()<dt*9){const c=heartCenter();particles.push({x:c.x+(Math.random()-.5)*14,y:c.y+(Math.random()-.5)*10,vx:(Math.random()-.5)*4,vy:-3-Math.random()*5,life:.8,max:.8,g:200+Math.random()*50|0,big:false})}
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue}
