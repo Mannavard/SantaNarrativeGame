@@ -92,15 +92,15 @@ button{font:inherit;color:inherit}
 /* right under the progress bar, on the right: music on/off + the findings collection (each button shows up only when it has something: .has).
    Under it, not beside it: the bar can be as wide as the screen. --below-stepper is set by layout() in game.js. */
 #corner{position:fixed;top:var(--below-stepper,calc(max(14px,env(safe-area-inset-top)) + 62px));right:max(14px,env(safe-area-inset-right));z-index:8;display:flex;flex-direction:row-reverse;align-items:flex-start;gap:10px}
-#corner button{position:relative;width:38px;height:38px;padding:8px;color:var(--ink);background:rgba(0,0,0,.6);border:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.6s,background .2s,color .2s}
+#corner button{position:relative;width:58px;height:58px;padding:0;background:none;border:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.6s,filter .2s}
 #corner button:not(.has){display:none}
-#corner button.on.has{opacity:.7;pointer-events:auto}
-#corner button.on.has:hover,#corner button.on.has:focus-visible{opacity:1;background:var(--ink);color:#000;outline:none}
-#corner svg{width:100%;height:100%;display:block}
+#corner button.on.has{opacity:.8;pointer-events:auto}
+#corner button.on.has:hover,#corner button.on.has:focus-visible{opacity:1;filter:brightness(1.2) drop-shadow(0 0 8px rgba(255,200,90,.55));outline:none}
+#corner img{width:100%;height:100%;object-fit:contain;display:block}      /* the icons are glow on transparency, so no button background */
 #mute .x{display:none}#mute.off .w{display:none}#mute.off .x{display:block}
 @media (max-width:699px){
-  #corner{right:max(10px,env(safe-area-inset-right));gap:8px}
-  #corner button{width:32px;height:32px;padding:6px}
+  #corner{right:max(10px,env(safe-area-inset-right));gap:4px}
+  #corner button{width:46px;height:46px}
 }
 #findsBtn .n{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:3px;font-family:var(--px);font-weight:600;font-size:14px;letter-spacing:.04em;line-height:1;color:#e0c88a;white-space:nowrap;text-shadow:0 1px 0 #000,0 0 4px #000}
 #findsBtn.new::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;background:#ffd166;box-shadow:0 0 6px #ffb347;animation:blink 1s steps(2) infinite}
@@ -109,7 +109,7 @@ button{font:inherit;color:inherit}
 
 /* findings: a card is 2:3, back and face are two sides of one element that turns over (.flip).
    Until the art exists (CONFIG.findings), each side draws a placeholder; a loaded picture (img.ok) covers it. */
-.fcard{position:relative;width:var(--cw,150px);aspect-ratio:2/3;perspective:900px}
+.fcard{position:relative;width:var(--cw,150px);aspect-ratio:977/1362;perspective:900px}      /* the shape of img/findings/back.png */
 .fc-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.5,0,.3,1)}
 .fcard.flip .fc-in{transform:rotateY(180deg)}
 .fc-side{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 0 0 3px #5a4a2a,0 6px 18px rgba(0,0,0,.6)}
@@ -120,6 +120,8 @@ button{font:inherit;color:inherit}
 .fc-side::before{content:"";position:absolute;inset:7%;box-shadow:inset 0 0 0 2px rgba(224,200,138,.45)}
 .fc-side .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--px);font-weight:600;line-height:1}
 .fc-back{background:repeating-linear-gradient(45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),repeating-linear-gradient(-45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),#0d1220}
+.fc-back:has(img.ok){background:none;box-shadow:none;overflow:visible}      /* the real back has its own octagon frame and transparent corners */
+.fc-back:has(img.ok) img{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
 .fc-back .ph{font-size:calc(var(--cw,150px)*.42);color:rgba(224,200,138,.5)}
 .fc-face{background:radial-gradient(circle at 50% 42%,#5a4420 0,#1d1608 62%,#0b0905 100%)}
 .fc-face .ph{font-size:calc(var(--cw,150px)*.34);color:#ffd98a;text-shadow:0 0 14px rgba(255,190,90,.8)}

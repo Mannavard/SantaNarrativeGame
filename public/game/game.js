@@ -66,9 +66,9 @@ const CONFIG={
            lineY:.12,         // where the ornaments sit vertically: 0 = centre of the frames, positive = lower
            colorLines:true,   // the ornaments light up with the frames (false = they stay B/W)
            pixelated:false},  // false for smooth art, true to keep hard pixel edges when scaled
-  // Findings: one card per secret, in this order (the names are TX.findings). Card art is 2:3, e.g. 400x600; `back` is shared.
+  // Findings: one card per secret, in this order (the names are TX.findings). Card art is about 5:7 (the shape of back.png: 977x1362), e.g. 400x558; `back` is shared (made by tools/prep_ui_icons.py from art/card-back.png).
   // A file that does not exist yet is drawn as a placeholder, so just drop the pictures into public/img/findings/.
-  findings:{back:'img/findings/back.png',list:[
+  findings:{back:'img/findings/back-2.png',list:[
     {key:'wind',  img:'img/findings/wind.png'},      // swipe the cursor back and forth over the snow (from the start)
     {key:'branch',img:'img/findings/branch.png'},    // shake the snow off a branch of the big tree (from stop II: there is no snow on day one)
     {key:'globe', img:'img/findings/globe.png'},     // shake the snow globe (from stop IV)
