@@ -336,6 +336,7 @@ const stageFor=n=>Math.min(Math.max(n,0),CONFIG.stages.length-1);      // 0 = st
 
 function layout(){
   const vw=innerWidth,vh=innerHeight,portrait=vh>vw*1.1,topInset=Math.ceil($('#stepper').getBoundingClientRect().bottom)+10;
+  document.documentElement.style.setProperty('--below-stepper',topInset+'px');      // the corner buttons sit there (styles.css #corner)
   if(portrait!==PORT){PORT=portrait;LW=PORT?CONFIG.portrait.w:1536;LH=PORT?CONFIG.portrait.h:1024;orientChanged=true}
   dpr=Math.min(2,window.devicePixelRatio||1);
   let s,left,top;
@@ -782,7 +783,7 @@ async function flyIn(i){
     {duration:FAST?150:650,easing:'cubic-bezier(.6,0,.8,.4)',fill:'forwards'}).finished;
   card.remove();findFly.className='';
   findsBtn.classList.remove('got');void findsBtn.offsetWidth;findsBtn.classList.add('got');
-  if(findsOpen)revealSlot(i,0,true);                    // the collection is open behind it: turn that card over too
+  if(findsOpen){revealSlot(i,0,true);state.findSeen.push(FIND[i].key);save();updateFindsBtn()}   // the collection is open behind it: turn that card over there (once)
 }
 
 let findsOpen=false,findsTimers=[];
@@ -795,13 +796,14 @@ function revealSlot(i,delay,fresh){
 function openFinds(){
   if(findsOpen)return;findsOpen=true;
   findsGrid.replaceChildren(...FIND.map((f,i)=>{
-    const fig=document.createElement('figure'),cap=document.createElement('figcaption');
-    fig.className='fslot';fig.style.setProperty('--i',i);cap.textContent=T('findLocked');
-    fig.append(makeCard(i),cap);return fig;
+    const fig=document.createElement('figure'),cap=document.createElement('figcaption'),card=makeCard(i),seen=isFound(f)&&!isFresh(f);
+    fig.className='fslot'+(seen?' got':'');fig.style.setProperty('--i',i);cap.textContent=seen?findName(f):T('findLocked');
+    if(seen)card.classList.add('flip');                      // already shown once: dealt face up, no turning over again
+    fig.append(card,cap);return fig;
   }));
   findsEl.classList.add('on');requestAnimationFrame(()=>findsEl.classList.add('dealt'));
-  const dealt=FIND.length*70+650;let k=0;                  // after the deal, the found cards turn over one by one
-  FIND.forEach((f,i)=>{if(isFound(f))revealSlot(i,dealt+220*k++,isFresh(f));else later(()=>findsGrid.children[i].classList.add('show'),dealt)});
+  const dealt=FIND.length*70+650;let k=0;                  // after the deal, the new findings turn over one by one
+  FIND.forEach((f,i)=>{if(isFresh(f))revealSlot(i,dealt+220*k++,true);else later(()=>findsGrid.children[i].classList.add('show'),dealt)});
   state.findSeen=FIND.filter(isFound).map(f=>f.key);save();updateFindsBtn();
   $('#findsClose').focus({preventScroll:true});
 }
