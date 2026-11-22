@@ -16,6 +16,9 @@ const OCCP={
   globeA:{circle:[400,1352,78]},          // the snow globe on stage 4
   globeB:{circle:[397,1357,74]},          // ... and on stage 5 (it sits slightly differently in that picture)
 };
+// SECRETS (desktop/landscape only, for now): small things to find in the room while waiting.
+// Branch points on the big foreground tree (logical 1536x1024 frame; same every stage, the camera does not move).
+const TREE_BRANCHES=[[345,75],[515,100],[650,130],[790,162],[875,200]];
 const CONFIG={
   // When each stop opens (local time of the visitor). Stops stay open once they have opened.
   // Stop I opens right after the player says "yes" (so its date is in the past on purpose); the others open on their dates.
@@ -41,10 +44,10 @@ const CONFIG={
     {src:'img/stage1.webp',p:{src:'img/stage1-portrait.webp',lamp:[719,771],cup:[315,1352],glass:[145,112,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
     {src:'img/stage2.webp',p:{src:'img/stage2-portrait.webp',lamp:[721,783],cup:[315,1357],glass:[145,118,800,1272],occ:[]},cup:[415,668],clock:[1148,690,1380,752],lamp:[1188,258],tilt:2.3,occ:[OCC.books,OCC.clockBtn]},
     {src:'img/stage3.webp',p:{src:'img/stage3-portrait.webp',lamp:[712,802],cup:[243,1366],glass:[100,245,795,1300],occ:[]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1190,248],tilt:.4,occ:[OCC.books,OCC.clockBtn]},
-    {src:'img/stage4.webp',p:{src:'img/stage4-portrait.webp',lamp:[714,723],cup:[220,1360],glass:[115,112,785,1302],occ:[OCCP.globeA]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn]},
+    {src:'img/stage4.webp',p:{src:'img/stage4-portrait.webp',lamp:[714,723],cup:[220,1360],glass:[115,112,785,1302],occ:[OCCP.globeA]},cup:[410,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.2,occ:[OCC.books,OCC.globe,OCC.clockBtn],star:[695,362]},
     // Stage 5+ are warm-toned, so they carry a colour theme for the live layers:
     //   screen = colour of the clock screen, digit/unlit = lit and unlit segments, glow = lamp glow, tint = snow colour multiplier
-    {src:'img/stage5.webp',p:{src:'img/stage5-portrait.webp',lamp:[710,790],cup:[225,1364],glass:[100,215,792,1298],occ:[OCCP.globeB]},cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78]},
+    {src:'img/stage5.webp',p:{src:'img/stage5-portrait.webp',lamp:[710,790],cup:[225,1364],glass:[100,215,792,1298],occ:[OCCP.globeB]},cup:[408,663],clock:[1144,680,1378,742],lamp:[1186,252],tilt:1.25,occ:[OCC.books,OCC.globe,OCC.clockBtn],screen:'#16100f',digit:'#e4c288',unlit:'#2b1e16',glow:[255,190,100],tint:[1,.92,.78],star:[662,380]},
   ],
   // The gift (box + lid cut by tools/prep_gift.py, heart by tools/make_heart.py - swap img/heart.png for the real reveal).
   // Everything is in the 1536x1024 frame / as fractions of the box:  x,y = centre of the box's base on the sill, w = box width;
@@ -299,6 +302,9 @@ const KEY='secret-santa-journey-v1';
 let state={accepted:false,done:0};
 try{if(QS.has('reset'))localStorage.removeItem(KEY);const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&typeof s.done==='number')state=s}catch(e){}
 state.entered=Math.max(state.entered||0,state.done||0);   // highest stop whose arrival has been shown
+state.secrets=state.secrets||{};                           // small things found in the room (prototype: no art yet, just a toast)
+if(state.branchShakenDay!==state.entered){state.branchShakenDay=state.entered;state.branchShaken=[]}  // fresh snow on the branches each new day
+state.branchShaken=state.branchShaken||[];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
 
 /* =====================================================================
@@ -635,6 +641,7 @@ function frame(ts){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;c.fillStyle=`rgba(255,${p.g},120,${Math.min(1,p.life/p.max*1.6).toFixed(2)})`;
     const z=p.big?2:1;c.fillRect(Math.round(p.x),Math.round(p.y),z,z);if(p.big){c.fillRect(Math.round(p.x)-1,Math.round(p.y),1,1);c.fillRect(Math.round(p.x)+2,Math.round(p.y),1,1)}}
+  stepSecrets(dt,k,c);
   drawClock();
 }
 
@@ -662,7 +669,7 @@ function onAdvance(){
   if(typing){skipTyping=true;return}
   if(advanceRes&&performance.now()-lineDoneAt>150){const r=advanceRes;advanceRes=null;r()}
 }
-document.addEventListener('pointerdown',e=>{if(e.target.closest('button,#gift'))return;onAdvance()});
+document.addEventListener('pointerdown',e=>{if(e.target.closest('button,#gift'))return;if(sceneClick(e))return;onAdvance()});
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();onAdvance()}
 });
@@ -715,6 +722,138 @@ function choose(opts,autoIdx=0){
     function done(i){document.removeEventListener('keydown',onKey);dialog.classList.remove('choosing');choicesEl.classList.remove('on');choicesEl.replaceChildren();res(i)}
     document.addEventListener('keydown',onKey);
   });
+}
+
+/* =====================================================================
+   SECRETS — small things to find in the room while waiting (prototype: a plain toast,
+   real achievement cards come later). Landscape only for now.
+   ===================================================================== */
+const SECRET_NAMES={                     // placeholder names until the card art exists
+ wind:{en:'Wind Caller',ru:'Повелитель Ветра',ro:'Chemătorul Vântului'},
+ branch:{en:'Snow Shaker',ru:'Отряхиватель Снега',ro:'Scuturătorul de Zăpadă'},
+ globe:{en:'Globe Keeper',ru:'Хозяин Шара',ro:'Păzitorul Globului'},
+ star:{en:'Star Lighter',ru:'Зажигающий Звёзды',ro:'Aprinzătorul de Stele'},
+};
+const toastEl=(()=>{const st=document.createElement('style');
+  st.textContent=`#secretToast{position:fixed;left:50%;top:14px;transform:translate(-50%,-140%);z-index:35;background:rgba(0,0,0,.88);color:#ffe2a8;font-family:var(--px);font-size:16px;letter-spacing:.06em;padding:10px 18px;box-shadow:0 0 0 2px #8c6a2f;transition:transform .5s ease;pointer-events:none;white-space:nowrap}
+  #secretToast.on{transform:translate(-50%,0)}`;
+  document.head.appendChild(st);
+  const el=document.createElement('div');el.id='secretToast';document.body.appendChild(el);return el})();
+let toastT=null;
+function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),2600)}
+function unlockSecret(key){
+  if(state.secrets[key])return;state.secrets[key]=true;save();
+  const name=SECRET_NAMES[key][LANG]||SECRET_NAMES[key].en;
+  showToast(`${LANG==='ru'?'НАХОДКА':LANG==='ro'?'DESCOPERIRE':'A FINDING'}: ${name}`);
+}
+
+/* ---- the lamp: click it to make it blink once ---- */
+let blinking=false;
+async function manualBlink(){
+  if(blinking)return;blinking=true;const was=lampTarget;
+  for(const v of [.3,1,.15,1])  {setLamp(v);await sleep(70)}
+  setLamp(was);blinking=false;
+}
+function tryLamp(lx,ly){
+  if(Math.hypot(lx-meta.lamp[0],ly-meta.lamp[1])>46)return false;
+  manualBlink();return true;
+}
+
+/* ---- the star on top of the little tree (stages that have one): masked dark until clicked, then lit for good ---- */
+let starLit=!!state.secrets.star,starLitAt=-99;
+function tryStar(lx,ly){
+  if(!meta.star||starLit)return false;
+  if(Math.hypot(lx-meta.star[0],ly-meta.star[1])>34)return false;
+  starLit=true;starLitAt=t;unlockSecret('star');return true;
+}
+function drawStar(c,k){
+  if(!meta.star)return;
+  const [sx0,sy0]=meta.star,sx=sx0*k,sy=sy0*k;
+  if(!starLit){
+    const gr=c.createRadialGradient(sx,sy,0,sx,sy,26*k);
+    gr.addColorStop(0,'rgba(8,10,16,.95)');gr.addColorStop(.7,'rgba(8,10,16,.82)');gr.addColorStop(1,'rgba(8,10,16,0)');
+    c.fillStyle=gr;c.fillRect(sx-26*k,sy-26*k,52*k,52*k);
+  }else{
+    const age=t-starLitAt,fl=age<2.2?.6+.4*Math.sin(age*26):1;
+    c.globalCompositeOperation='lighter';
+    const gr=c.createRadialGradient(sx,sy,0,sx,sy,42*k);
+    gr.addColorStop(0,`rgba(255,235,180,${(.38*fl).toFixed(3)})`);gr.addColorStop(1,'rgba(255,235,180,0)');
+    c.fillStyle=gr;c.fillRect(sx-42*k,sy-42*k,84*k,84*k);
+    c.globalCompositeOperation='source-over';
+  }
+}
+
+/* ---- the snow globe: click/shake it, the snow inside swirls and settles (white, bounded to the glass circle) ---- */
+let globeFlakes=[];
+function globeActive(){return meta.occ&&meta.occ.includes(OCC.globe)}
+function tryGlobe(lx,ly){
+  if(!globeActive())return false;
+  const [gx,gy,gr]=OCC.globe.circle;if(Math.hypot(lx-gx,ly-gy)>gr+14)return false;
+  shakeGlobe();unlockSecret('globe');return true;
+}
+function shakeGlobe(){
+  const [gx,gy,gr]=OCC.globe.circle;
+  for(let i=0;i<26;i++){const a=Math.random()*6.283,r=Math.random()*gr*.75;
+    globeFlakes.push({x:gx+Math.cos(a)*r,y:gy+Math.sin(a)*r,vx:(Math.random()-.5)*34,vy:-10-Math.random()*30,life:0,max:2.6+Math.random()*1.4})}
+  if(globeFlakes.length>160)globeFlakes.splice(0,globeFlakes.length-160);
+}
+function stepGlobe(dt,k,c){
+  if(!globeActive()){if(globeFlakes.length)globeFlakes=[];return}
+  const [gx,gy,gr]=OCC.globe.circle;
+  for(const p of globeFlakes){
+    p.life+=dt;p.vy+=18*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.2,dt);
+    const dx=p.x-gx,dy=p.y-gy,dist=Math.hypot(dx,dy);
+    if(dist>gr-3){const nx=dx/dist,ny=dy/dist;p.x=gx+nx*(gr-3);p.y=gy+ny*(gr-3);p.vx-=nx*Math.abs(p.vx)*.5;p.vy-=ny*Math.abs(p.vy)*.5}
+  }
+  globeFlakes=globeFlakes.filter(p=>p.life<=p.max);
+  for(const p of globeFlakes){const a=p.life>p.max-.6?Math.max(0,(p.max-p.life)/.6):1;
+    c.fillStyle=`rgba(255,255,255,${(a*.9).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
+}
+
+/* ---- snow sitting on the foreground tree's branches: a little more each day, shake a branch to drop it ---- */
+let snowBits=[];
+function branchLevel(){return PORT?0:clamp(state.entered-1,0,TREE_BRANCHES.length)}
+function tryBranch(lx,ly){
+  const n=branchLevel();
+  for(let i=0;i<n;i++){
+    if(state.branchShaken.includes(i))continue;
+    const [bx,by]=TREE_BRANCHES[i];if(Math.hypot(lx-bx,ly-by)>38)continue;
+    state.branchShaken.push(i);save();shakeBranch(bx,by);unlockSecret('branch');return true;
+  }
+  return false;
+}
+function shakeBranch(bx,by){
+  for(let i=0;i<22;i++)snowBits.push({x:bx+(Math.random()-.5)*10,y:by+(Math.random()-.5)*6,vx:(Math.random()-.5)*40,vy:10+Math.random()*30,life:0,max:1+Math.random()*.8});
+}
+function stepBranches(dt,k,c){
+  const n=branchLevel();
+  for(let i=0;i<n;i++){
+    if(state.branchShaken.includes(i))continue;
+    const [bx,by]=TREE_BRANCHES[i],x=bx*k,y=by*k;
+    for(let j=0;j<5;j++){const ang=j*1.4+i,rx=Math.cos(ang)*5*k,ry=Math.sin(ang)*3*k;
+      c.fillStyle='rgba(235,240,245,.85)';c.fillRect(x+rx-1,y+ry-1,3,3)}
+  }
+  for(const p of snowBits){p.life+=dt;p.vy+=40*dt;p.x+=p.vx*dt;p.y+=p.vy*dt}
+  snowBits=snowBits.filter(p=>p.life<=p.max);
+  for(const p of snowBits){const a=Math.max(0,1-p.life/p.max);
+    c.fillStyle=`rgba(255,255,255,${(a*.9).toFixed(3)})`;c.fillRect(Math.round(p.x*k),Math.round(p.y*k),2,2)}
+}
+
+/* ---- the wind: swipe the cursor back and forth over the snow fast enough to shed a few wake swirls (see stirSnow/vort above) ---- */
+function checkWindSecret(){if(!state.secrets.wind&&vort.length>=3)unlockSecret('wind')}
+
+/* called once per frame from frame(), after the ambient snow/steam are drawn */
+function stepSecrets(dt,k,c){
+  checkWindSecret();
+  if(PORT)return;                       // the room's extra props are landscape-only for now
+  drawStar(c,k);stepGlobe(dt,k,c);stepBranches(dt,k,c);
+}
+/* a click in the scene: returns true if it hit something, so the caller skips the usual "advance the dialogue" */
+function sceneClick(e){
+  if(PORT||!box.s)return false;
+  const lx=(e.clientX-box.left)/box.s,ly=(e.clientY-box.top)/box.s;
+  if(lx<0||ly<0||lx>LW||ly>LH)return false;
+  return tryStar(lx,ly)||tryGlobe(lx,ly)||tryBranch(lx,ly)||tryLamp(lx,ly);
 }
 
 /* =====================================================================
