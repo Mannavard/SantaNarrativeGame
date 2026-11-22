@@ -1124,8 +1124,21 @@ async function runStop(n){
 /* The pause for thinking: the dialogue goes away, the question stays as a quiet caption, a sentence starter fades in (stop IV has two:
    first noticing, then thanking), two soft cues come at 40% and 70%, the lamp breathes (8 s), "I am ready" appears after quietReadyAfter
    seconds and "thirty more seconds" in the last 10. The clock counts down (quietLeft is in game seconds, so FAST works too). */
-const quietEl=$('#quiet'),qQ=$('#qQ'),qS=$('#qS'),qCue=$('#qCue'),qReady=$('#qReady'),qMore=$('#qMore');
-let quietTotal=0,quietActive=false;
+const quietEl=$('#quiet'),qQ=$('#qQ'),qS=$('#qS'),qCue=$('#qCue'),qReady=$('#qReady'),qMore=$('#qMore'),qBtns=$('.qbtns');
+let quietTotal=0,quietActive=false,qMoreWant=false,qMoreTimer=0;
+const Q_RESIZE_MS=600,Q_FADE_MS=800;                              // match the width and opacity transitions in styles.css
+function qMeasure(){                                             // natural widths of both buttons -> --rw and --grow (no animation)
+  qBtns.classList.add('nt');qReady.style.width='auto';
+  const rW=qReady.getBoundingClientRect().width,mW=qMore.getBoundingClientRect().width,gap=parseFloat(getComputedStyle(qBtns).columnGap)||0;
+  qBtns.style.setProperty('--rw',rW+'px');qBtns.style.setProperty('--grow',(gap+mW)+'px');
+  qReady.style.width='';void qBtns.offsetWidth;qBtns.classList.remove('nt');
+}
+function qShowMore(want){                                        // narrow "ready" then fade "more" in; fade "more" out then widen "ready"
+  if(want===qMoreWant)return;qMoreWant=want;clearTimeout(qMoreTimer);
+  if(want){qBtns.classList.remove('solo');qMoreTimer=setTimeout(()=>qMore.classList.add('on'),qReady.classList.contains('on')?Q_RESIZE_MS:0)}
+  else{qMore.classList.remove('on');qMoreTimer=setTimeout(()=>qBtns.classList.add('solo'),Q_FADE_MS)}
+}
+addEventListener('resize',()=>{if(quietActive)qMeasure()});
 function setFade(el,s){                                          // change a caption with a fade out / fade in
   if(el.dataset.s===s)return;el.dataset.s=s;
   const swap=()=>{if(el.dataset.s!==s)return;el.textContent=s;if(s)el.classList.add('on')};
@@ -1137,18 +1150,19 @@ function quietMoment(n){
   clockForced=true;curMode=3;quietLeft=DBG.auto?Math.min(base,3):base;quietTotal=quietLeft;quietActive=true;
   qQ.textContent=QUESTIONS[n-1];[qS,qCue].forEach(el=>{el.textContent='';el.dataset.s='';el.classList.remove('on')});
   qReady.textContent=T('qReady');qMore.textContent=T('qMore');qReady.classList.remove('on');qMore.classList.remove('on');
+  clearTimeout(qMoreTimer);qMoreWant=false;qMeasure();qBtns.classList.add('nt','solo');void qBtns.offsetWidth;qBtns.classList.remove('nt');
   quietEl.classList.add('on');
   qReady.onclick=()=>{if(quietLeft>0)quietLeft=.001};
-  qMore.onclick=()=>{if(quietLeft>0){quietLeft+=CONFIG.quietExtra;quietTotal+=CONFIG.quietExtra;qMore.classList.remove('on')}};
+  qMore.onclick=()=>{if(quietLeft>0){quietLeft+=CONFIG.quietExtra;quietTotal+=CONFIG.quietExtra;qShowMore(false)}};
   const iv=setInterval(()=>{
     const e=quietTotal-quietLeft,live=quietLeft>0;
     setFade(qS,e<2?'':starters.length>1&&e>=base*.5?starters[1]:starters[0]);
     setFade(qCue,e>=base*.4&&e<base*.4+7?cues[0]:e>=base*.7&&e<base*.7+7?cues[1]:'');
     qReady.classList.toggle('on',live&&e>=CONFIG.quietReadyAfter);
-    qMore.classList.toggle('on',live&&quietLeft<10);
+    qShowMore(live&&quietLeft<10);
   },200);
   return new Promise(res=>{quietRes=res}).then(()=>{
-    clearInterval(iv);quietActive=false;quietEl.classList.remove('on');
+    clearInterval(iv);clearTimeout(qMoreTimer);quietActive=false;quietEl.classList.remove('on');
     clockForced=false;curMode=0;lastSwitch=t;
     return sleep(900);
   });

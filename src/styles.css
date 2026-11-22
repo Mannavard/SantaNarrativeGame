@@ -198,8 +198,15 @@ button{font:inherit;color:inherit}
 #qCue{margin-top:2px;min-height:1.2em;font-size:clamp(20px,2.4vw,26px);color:#b2b2b2;opacity:0;transition:opacity .7s}
 #qS.on,#qCue.on{opacity:1}
 .qbtns{display:flex;gap:14px;justify-content:center;margin-top:8px;min-height:50px}
-.qbtns button{opacity:0;pointer-events:none;transition:opacity .8s}
+.qbtns button{opacity:0;pointer-events:none;white-space:nowrap;transition:opacity .8s}
 .qbtns button.on{opacity:1;pointer-events:auto}
+/* "I am ready" alone is as wide as both buttons (same left edge); it narrows from the right before "thirty more seconds" fades in.
+   --rw is its own width, --grow the gap plus the other button; the other button's negative margin keeps the pair's total width, so nothing shifts. */
+#qReady{width:var(--rw,auto);transition:opacity .8s,width .6s ease-in-out}
+#qMore{transition:opacity .8s,margin-left .6s ease-in-out}
+.qbtns.solo #qReady{width:calc(var(--rw) + var(--grow))}
+.qbtns.solo #qMore{margin-left:calc(-1 * var(--grow))}
+.qbtns.nt button{transition:none!important}
 @media (max-height:480px),(max-width:699px){.qbtns{min-height:42px;margin-top:8px}.qbtns .pxbtn{padding:8px 14px;font-size:20px}#qS{margin-top:8px}}
 
 /* end card + remind + keepsake */
