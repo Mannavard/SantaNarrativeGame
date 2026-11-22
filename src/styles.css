@@ -89,14 +89,74 @@ button{font:inherit;color:inherit}
 @media (max-width:699px){#steps .cap{display:none}}
 @media (min-width:700px){#steps{margin-bottom:16px}}
 
-/* clock overlay (hit-area + caption, positioned over the clock in the picture) */
-#mute{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:8;width:38px;height:38px;padding:8px;
-  color:var(--ink);background:rgba(0,0,0,.6);border:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.6s,background .2s,color .2s}
-#mute.on.has{opacity:.7;pointer-events:auto}
-#mute.on.has:hover,#mute.on.has:focus-visible{opacity:1;background:var(--ink);color:#000;outline:none}
-#mute svg{width:100%;height:100%;display:block}
+/* top-right corner: music on/off + the findings collection (each button shows up only when it has something: .has) */
+#corner{position:fixed;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:8;display:flex;flex-direction:row-reverse;align-items:flex-start;gap:10px}
+#corner button{position:relative;width:38px;height:38px;padding:8px;color:var(--ink);background:rgba(0,0,0,.6);border:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 1.6s,background .2s,color .2s}
+#corner button:not(.has){display:none}
+#corner button.on.has{opacity:.7;pointer-events:auto}
+#corner button.on.has:hover,#corner button.on.has:focus-visible{opacity:1;background:var(--ink);color:#000;outline:none}
+#corner svg{width:100%;height:100%;display:block}
 #mute .x{display:none}#mute.off .w{display:none}#mute.off .x{display:block}
-@media (max-width:699px){#mute{top:calc(max(14px,env(safe-area-inset-top)) + 62px);right:max(10px,env(safe-area-inset-right));width:32px;height:32px;padding:6px}}      /* narrow screens: the progress bar runs edge to edge, so the button sits under it */
+@media (max-width:699px){      /* narrow screens: the progress bar runs edge to edge, so the buttons sit under it */
+  #corner{top:calc(max(14px,env(safe-area-inset-top)) + 62px);right:max(10px,env(safe-area-inset-right));gap:8px}
+  #corner button{width:32px;height:32px;padding:6px}
+}
+#findsBtn .n{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:3px;font-family:var(--px);font-weight:600;font-size:14px;letter-spacing:.04em;line-height:1;color:#e0c88a;white-space:nowrap;text-shadow:0 1px 0 #000,0 0 4px #000}
+#findsBtn.new::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;background:#ffd166;box-shadow:0 0 6px #ffb347;animation:blink 1s steps(2) infinite}
+#findsBtn.got{animation:fgot .8s ease-out}
+@keyframes fgot{0%{transform:scale(1);box-shadow:0 0 0 rgba(255,209,102,0)}30%{transform:scale(1.3);box-shadow:0 0 22px rgba(255,209,102,.9);opacity:1}100%{transform:scale(1);box-shadow:0 0 0 rgba(255,209,102,0)}}
+
+/* findings: a card is 2:3, back and face are two sides of one element that turns over (.flip).
+   Until the art exists (CONFIG.findings), each side draws a placeholder; a loaded picture (img.ok) covers it. */
+.fcard{position:relative;width:var(--cw,150px);aspect-ratio:2/3;perspective:900px}
+.fc-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.5,0,.3,1)}
+.fcard.flip .fc-in{transform:rotateY(180deg)}
+.fc-side{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 0 0 3px #5a4a2a,0 6px 18px rgba(0,0,0,.6)}
+.fc-face{transform:rotateY(180deg)}
+.fc-side img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0}
+.fc-side img.ok{opacity:1}
+.fc-side img.ok~.ph,.fc-side:has(img.ok)::before{display:none}
+.fc-side::before{content:"";position:absolute;inset:7%;box-shadow:inset 0 0 0 2px rgba(224,200,138,.45)}
+.fc-side .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--px);font-weight:600;line-height:1}
+.fc-back{background:repeating-linear-gradient(45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),repeating-linear-gradient(-45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),#0d1220}
+.fc-back .ph{font-size:calc(var(--cw,150px)*.42);color:rgba(224,200,138,.5)}
+.fc-face{background:radial-gradient(circle at 50% 42%,#5a4420 0,#1d1608 62%,#0b0905 100%)}
+.fc-face .ph{font-size:calc(var(--cw,150px)*.34);color:#ffd98a;text-shadow:0 0 14px rgba(255,190,90,.8)}
+
+/* a card that was just found: flies in, turns over with a burst of light, then flies into the corner button */
+#findFly{position:fixed;inset:0;z-index:30;pointer-events:none;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:16px 16px min(16vh,150px)}      /* centred a little above the dialogue */
+#findFly.on{display:flex}
+#findFly::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,.2) 75%);opacity:0;transition:opacity .5s}
+#findFly.dim::before{opacity:1}
+#findFly .fwrap{position:relative}
+#findFly .fcard{--cw:min(220px,44vw,calc((100dvh - 290px)/1.5))}
+.fburst{position:absolute;left:50%;top:50%;width:260%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%) scale(.2);opacity:0;
+  background:radial-gradient(circle,rgba(255,214,120,.6) 0,rgba(255,190,90,.2) 35%,rgba(255,190,90,0) 65%)}
+#findFly.burst .fburst{animation:fburst 1.5s ease-out both}
+@keyframes fburst{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
+.fcap{position:relative;text-align:center;opacity:0;transition:opacity .5s;text-shadow:0 2px 0 #000,0 0 10px #000}
+#findFly.cap .fcap{opacity:1}
+.fcap .k{font-family:var(--px);font-weight:600;font-size:18px;letter-spacing:.24em;margin-right:-.24em;color:#e0c88a}
+.fcap .v{font-family:var(--px);font-weight:600;font-size:clamp(28px,4vw,40px);letter-spacing:.06em;color:var(--ink);margin-top:4px}
+
+/* the collection: six cards dealt face down, the found ones turn over one by one */
+#finds{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .45s}
+#finds.on{opacity:1;pointer-events:auto}
+#finds .fbox{display:flex;flex-direction:column;align-items:center;gap:14px;transform:scale(.86) translateY(-14px);transform-origin:100% 0;transition:transform .5s cubic-bezier(.2,.8,.3,1)}
+#finds.on .fbox{transform:none}
+#findsH{font-family:var(--px);font-weight:600;font-size:clamp(30px,4.5vw,44px);letter-spacing:.2em;margin-right:-.2em}
+#finds .fcount{font-family:var(--px);font-weight:600;font-size:18px;letter-spacing:.12em;color:#e0c88a;margin-top:-8px}
+#findsGrid{--cw:min(150px,25vw,calc((100dvh - 260px)/3.3));display:grid;grid-template-columns:repeat(3,var(--cw));gap:16px 22px}
+.fslot{display:flex;flex-direction:column;align-items:center;gap:9px;margin:0}
+.fslot .fcard{opacity:0}
+#finds.dealt .fslot .fcard{animation:fdeal .45s cubic-bezier(.2,.8,.3,1) calc(var(--i)*70ms) both}
+@keyframes fdeal{0%{opacity:0;transform:translateY(-26px) scale(.7) rotate(-6deg)}100%{opacity:1;transform:none}}
+.fslot figcaption{font-family:var(--px);font-weight:600;font-size:15px;letter-spacing:.04em;line-height:1.15;text-align:center;color:var(--faint);min-height:2.3em;max-width:calc(var(--cw) + 18px);opacity:0;transition:opacity .5s}
+.fslot.show figcaption{opacity:1}
+.fslot.got figcaption{color:#e0c88a}
+.fslot.fresh .fc-face{animation:ffresh 1.6s ease-in-out 2}
+@keyframes ffresh{0%,100%{box-shadow:0 0 0 3px #5a4a2a,0 6px 18px rgba(0,0,0,.6)}50%{box-shadow:0 0 0 3px #ffd166,0 0 28px rgba(255,200,90,.9)}}
+@media (max-width:699px){#findsGrid{gap:12px}.fslot figcaption{font-size:13px}}
 #clockUI{position:fixed;z-index:4;opacity:0;transition:opacity 1.6s;pointer-events:none}
 #clockUI.on{opacity:1}
 #clockBtn{position:absolute;inset:0;background:none;border:0;cursor:pointer;pointer-events:auto}

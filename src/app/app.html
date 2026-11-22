@@ -14,13 +14,34 @@
   <div id="steplbl">THE ROAD HASN'T BEGUN</div>
 </nav>
 
-<button id="mute" type="button" aria-pressed="true" aria-label="Music on / off">
-  <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-    <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/>
-    <path class="w" d="M11 6v4M13 4v8" stroke="currentColor" stroke-width="1.4" fill="none"/>
-    <path class="x" d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.4" fill="none"/>
-  </svg>
-</button>
+<div id="corner">
+  <button id="mute" type="button" aria-pressed="true" aria-label="Music on / off">
+    <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+      <path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/>
+      <path class="w" d="M11 6v4M13 4v8" stroke="currentColor" stroke-width="1.4" fill="none"/>
+      <path class="x" d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.4" fill="none"/>
+    </svg>
+  </button>
+  <button id="findsBtn" type="button" aria-label="Findings">
+    <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+      <path d="M2 4h7v10H2z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M6 2h8v10h-2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M5 8h1v1H5z" fill="currentColor"/>
+    </svg>
+    <span class="n" id="findsN"></span>
+  </button>
+</div>
+
+<div id="finds" role="dialog" aria-modal="true" aria-labelledby="findsH">
+  <div class="fbox">
+    <h2 id="findsH">FINDINGS</h2>
+    <div class="fcount" id="findsCount"></div>
+    <div id="findsGrid"></div>
+    <button id="findsClose" class="pxbtn" type="button">CLOSE</button>
+  </div>
+</div>
+<div id="findFly" aria-hidden="true"><div class="fwrap"><div class="fburst"></div></div><div class="fcap"><div class="k" id="flyK"></div><div class="v" id="flyV"></div></div></div>
+<div class="sr" id="srFind" aria-live="polite"></div>
 
 <div id="clockUI"><button id="clockBtn" type="button" aria-label="Switch clock mode"></button></div>
 

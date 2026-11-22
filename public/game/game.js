@@ -68,6 +68,16 @@ const CONFIG={
            lineY:.12,         // where the ornaments sit vertically: 0 = centre of the frames, positive = lower
            colorLines:true,   // the ornaments light up with the frames (false = they stay B/W)
            pixelated:false},  // false for smooth art, true to keep hard pixel edges when scaled
+  // Findings: one card per secret, in this order (the names are TX.findings). Card art is 2:3, e.g. 400x600; `back` is shared.
+  // A file that does not exist yet is drawn as a placeholder, so just drop the pictures into public/img/findings/.
+  findings:{back:'img/findings/back.png',list:[
+    {key:'wind',  img:'img/findings/wind.png'},      // swipe the cursor back and forth over the snow (from the start)
+    {key:'branch',img:'img/findings/branch.png'},    // shake the snow off a branch of the big tree (from stop II: there is no snow on day one)
+    {key:'globe', img:'img/findings/globe.png'},     // shake the snow globe (from stop IV)
+    {key:'star',  img:'img/findings/star.png'},      // light the star on the little tree (from stop IV)
+    {key:'f5',    img:'img/findings/f5.png'},        // not designed yet: nothing unlocks it
+    {key:'f6',    img:'img/findings/f6.png'},        // not designed yet: nothing unlocks it
+  ]},
   clockGrow:[0,4,0,5],                 // landscape: the dark screen in the pictures is a bit taller than each stage's `clock` rect; the live clock may use this much more [left, up, right, down] (logical px)
   glass:[250,56,1318,644],             // the clear part of the window, where the live snow falls
   // PHONES (portrait screens). Its own frame and pictures (tools/normalize_portrait.py aligns them by the clock), everything in that frame's pixels.
@@ -89,7 +99,7 @@ const nowMs=()=>Date.now()+NOW_OFFSET;
 const sleep=ms=>new Promise(r=>setTimeout(r,FAST?ms/8:ms));
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const ROM=['I','II','III','IV','V'];
+const ROM=['I','II','III','IV','V','VI'];
 const stopMs=CONFIG.stops.map(s=>new Date(s).getTime()),santaMs=new Date(CONFIG.santaAt).getTime();
 const unlockedCount=()=>stopMs.filter(t=>t<=nowMs()).length;
 const fmtDate=d=>(d.toLocaleDateString(LOC[LANG],{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString(LOC[LANG],{hour:'2-digit',minute:'2-digit',hour12:false})).replace(/ /g,'\u00A0');
@@ -163,6 +173,8 @@ en:{
  acc1:'Great. I was hoping you would say yes.',acc1b:'Now it is for real.',
  acc:['The rules are simple. Five stops. One question at each.','There is nothing to type. Nobody is listening, nobody is keeping score. That is the point.',"The questions are for you. Ask them quietly. Answer them honestly. Or don't — it's your road.","One stop a day, five in all. A gift doesn't like to be rushed."],
  accLights:'Above the window, five small lights come on. That is your path.',
+ findsTitle:'FINDINGS',findsBtn:'Findings',found:'A FINDING',findLocked:'???',findsClose:'CLOSE',
+ findings:{wind:'Lord of the Snowflakes',branch:'Shake Off Winter',globe:'A Tiny Winter',star:'Light the Star',f5:'',f6:''},
 },
 ru:{
  title:'Путешествие',
@@ -225,6 +237,8 @@ ru:{
  acc1:'Отлично. Я надеялся, что ты согласишься.',acc1b:'Вот теперь — по-настоящему.',
  acc:['Правила простые. Пять остановок. На каждой — один вопрос.','Печатать ничего не нужно. Никто не слушает и никто не ведёт счёт. В этом смысл.','Вопросы — для тебя. Задавай их тихо. Отвечай честно. А можешь и не отвечать — это твоя дорога.','Одна остановка в день, всего пять. Подарок не любит спешки.'],
  accLights:'Над окном загораются пять маленьких огоньков. Это твой путь.',
+ findsTitle:'НАХОДКИ',findsBtn:'Находки',found:'НАХОДКА',findLocked:'???',findsClose:'ЗАКРЫТЬ',
+ findings:{wind:'Повелитель Снежинок',branch:'Стряхнуть Зиму',globe:'Маленькая Зима',star:'Зажечь Звезду',f5:'',f6:''},
 },
 ro:{
  title:'Călătoria',
@@ -287,6 +301,8 @@ ro:{
  acc1:'Grozav. Speram să spui da.',acc1b:'Acum e pe bune.',
  acc:['Regulile sunt simple. Cinci opriri. La fiecare, o întrebare.','Nu trebuie să scrii nimic. Nimeni nu ascultă, nimeni nu ține scorul. Asta e ideea.','Întrebările sunt pentru tine. Pune-le în liniște. Răspunde sincer. Sau nu — e drumul tău.','O oprire pe zi, cinci în total. Unui cadou nu-i place graba.'],
  accLights:'Deasupra ferestrei se aprind cinci luminițe. Acesta e drumul tău.',
+ findsTitle:'DESCOPERIRI',findsBtn:'Descoperiri',found:'O DESCOPERIRE',findLocked:'???',findsClose:'ÎNCHIDE',
+ findings:{wind:'Stăpânul Fulgilor',branch:'Scutură Iarna',globe:'O Iarnă Mică',star:'Aprinde Steaua',f5:'',f6:''},
 },
 };
 let LANG='en',langKnown=false;
@@ -666,10 +682,11 @@ const dialog=$('#dialog'),tagEl=$('#tag'),textEl=$('#text'),nextEl=$('#next'),ch
 const DBG={auto:QS.has('auto')};
 let typing=false,skipTyping=false,advanceRes=null,lineDoneAt=0;
 function onAdvance(){
+  if(findsOpen)return;
   if(typing){skipTyping=true;return}
   if(advanceRes&&performance.now()-lineDoneAt>150){const r=advanceRes;advanceRes=null;r()}
 }
-document.addEventListener('pointerdown',e=>{if(e.target.closest('button,#gift'))return;if(sceneClick(e))return;onAdvance()});
+document.addEventListener('pointerdown',e=>{if(e.target.closest('button,#gift,#finds'))return;if(sceneClick(e))return;onAdvance()});
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();onAdvance()}
 });
@@ -725,27 +742,87 @@ function choose(opts,autoIdx=0){
 }
 
 /* =====================================================================
-   SECRETS — small things to find in the room while waiting (prototype: a plain toast,
-   real achievement cards come later). Landscape only for now.
+   FINDINGS — the collection of secrets. When one is found, its card flies in, turns over and flies
+   into the corner button; the button opens all six (face down, the found ones turn over one by one).
    ===================================================================== */
-const SECRET_NAMES={                     // placeholder names until the card art exists
- wind:{en:'Wind Caller',ru:'Повелитель Ветра',ro:'Chemătorul Vântului'},
- branch:{en:'Snow Shaker',ru:'Отряхиватель Снега',ro:'Scuturătorul de Zăpadă'},
- globe:{en:'Globe Keeper',ru:'Хозяин Шара',ro:'Păzitorul Globului'},
- star:{en:'Star Lighter',ru:'Зажигающий Звёзды',ro:'Aprinzătorul de Stele'},
-};
-const toastEl=(()=>{const st=document.createElement('style');
-  st.textContent=`#secretToast{position:fixed;left:50%;top:14px;transform:translate(-50%,-140%);z-index:35;background:rgba(0,0,0,.88);color:#ffe2a8;font-family:var(--px);font-size:16px;letter-spacing:.06em;padding:10px 18px;box-shadow:0 0 0 2px #8c6a2f;transition:transform .5s ease;pointer-events:none;white-space:nowrap}
-  #secretToast.on{transform:translate(-50%,0)}`;
-  document.head.appendChild(st);
-  const el=document.createElement('div');el.id='secretToast';document.body.appendChild(el);return el})();
-let toastT=null;
-function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),2600)}
-function unlockSecret(key){
-  if(state.secrets[key])return;state.secrets[key]=true;save();
-  const name=SECRET_NAMES[key][LANG]||SECRET_NAMES[key].en;
-  showToast(`${LANG==='ru'?'НАХОДКА':LANG==='ro'?'DESCOPERIRE':'A FINDING'}: ${name}`);
+const FIND=CONFIG.findings.list,findsBtn=$('#findsBtn'),findsEl=$('#finds'),findsGrid=$('#findsGrid'),findFly=$('#findFly'),flyWrap=findFly.querySelector('.fwrap');
+state.findSeen=state.findSeen||[];
+const isFound=f=>!!state.secrets[f.key];
+const findName=f=>T('findings')[f.key]||T('findLocked');
+const isFresh=f=>isFound(f)&&!state.findSeen.includes(f.key);
+function setArt(img,src){loadImg(src).then(()=>{img.src=src;img.classList.add('ok')}).catch(()=>{})}   // a missing file keeps the placeholder
+function makeCard(i){
+  const card=document.createElement('div');card.className='fcard';
+  card.innerHTML=`<div class="fc-in"><div class="fc-side fc-back"><img alt=""><span class="ph">?</span></div><div class="fc-side fc-face"><img alt=""><span class="ph">${ROM[i]}</span></div></div>`;
+  const [back,face]=card.querySelectorAll('img');setArt(back,CONFIG.findings.back);setArt(face,FIND[i].img);
+  return card;
 }
+function updateFindsBtn(){
+  const n=FIND.filter(isFound).length;
+  findsBtn.classList.toggle('has',n>0);findsBtn.classList.toggle('new',FIND.some(isFresh));
+  $('#findsN').textContent=`${n}/${FIND.length}`;$('#findsCount').textContent=`${n} / ${FIND.length}`;
+}
+let flyQueue=Promise.resolve();
+function unlockSecret(key){
+  const i=FIND.findIndex(f=>f.key===key);
+  if(i<0||state.secrets[key])return;state.secrets[key]=true;save();
+  flyQueue=flyQueue.then(()=>flyIn(i)).catch(()=>{findFly.className=''});     // several at once: one after another
+}
+async function flyIn(i){
+  const card=makeCard(i);flyWrap.append(card);
+  $('#flyK').textContent=T('found');$('#flyV').textContent=findName(FIND[i]);$('#srFind').textContent=`${T('found')}: ${findName(FIND[i])}`;
+  findFly.className='on dim';
+  await card.animate([{transform:'translateY(65vh) rotate(-12deg) scale(.45)',opacity:0},{opacity:1,offset:.5},{transform:'none',opacity:1}],
+    {duration:FAST?200:750,easing:'cubic-bezier(.2,.8,.3,1)',fill:'forwards'}).finished;
+  await sleep(250);
+  findFly.classList.add('burst');card.classList.add('flip');
+  await sleep(500);findFly.classList.add('cap');
+  await sleep(2400);
+  findFly.classList.remove('cap','dim');
+  updateFindsBtn();await sleep(350);                     // the first finding: the button appears before the card flies into it
+  const a=card.getBoundingClientRect(),b=findsBtn.getBoundingClientRect();
+  const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2);
+  await card.animate([{transform:'none',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(${b.height/a.height}) rotate(8deg)`,opacity:.3}],
+    {duration:FAST?150:650,easing:'cubic-bezier(.6,0,.8,.4)',fill:'forwards'}).finished;
+  card.remove();findFly.className='';
+  findsBtn.classList.remove('got');void findsBtn.offsetWidth;findsBtn.classList.add('got');
+  if(findsOpen)revealSlot(i,0,true);                    // the collection is open behind it: turn that card over too
+}
+
+let findsOpen=false,findsTimers=[];
+const later=(fn,ms)=>findsTimers.push(setTimeout(fn,ms));
+function revealSlot(i,delay,fresh){
+  const fig=findsGrid.children[i];if(!fig)return;
+  later(()=>{fig.classList.add('got');fig.querySelector('figcaption').textContent=findName(FIND[i]);fig.querySelector('.fcard').classList.add('flip');if(fresh)fig.classList.add('fresh')},delay);
+  later(()=>fig.classList.add('show'),delay+450);
+}
+function openFinds(){
+  if(findsOpen)return;findsOpen=true;
+  findsGrid.replaceChildren(...FIND.map((f,i)=>{
+    const fig=document.createElement('figure'),cap=document.createElement('figcaption');
+    fig.className='fslot';fig.style.setProperty('--i',i);cap.textContent=T('findLocked');
+    fig.append(makeCard(i),cap);return fig;
+  }));
+  findsEl.classList.add('on');requestAnimationFrame(()=>findsEl.classList.add('dealt'));
+  const dealt=FIND.length*70+650;let k=0;                  // after the deal, the found cards turn over one by one
+  FIND.forEach((f,i)=>{if(isFound(f))revealSlot(i,dealt+220*k++,isFresh(f));else later(()=>findsGrid.children[i].classList.add('show'),dealt)});
+  state.findSeen=FIND.filter(isFound).map(f=>f.key);save();updateFindsBtn();
+  $('#findsClose').focus({preventScroll:true});
+}
+function closeFinds(){
+  if(!findsOpen)return;findsOpen=false;findsTimers.forEach(clearTimeout);findsTimers=[];
+  findsEl.classList.remove('on');setTimeout(()=>{if(!findsOpen){findsEl.classList.remove('dealt');findsGrid.replaceChildren()}},500);
+  findsBtn.focus({preventScroll:true});
+}
+findsBtn.addEventListener('click',e=>{e.stopPropagation();openFinds()});
+$('#findsClose').addEventListener('click',e=>{e.stopPropagation();closeFinds()});
+findsEl.addEventListener('click',e=>{if(e.target===findsEl)closeFinds()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&findsOpen){e.preventDefault();closeFinds()}});
+updateFindsBtn();
+
+/* =====================================================================
+   SECRETS — small things to find in the room while waiting. Landscape only for now.
+   ===================================================================== */
 
 /* ---- the lamp: click it to make it blink once ---- */
 let blinking=false;
@@ -1142,7 +1219,8 @@ if(CONFIG.allowDebug){
   const mk=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
   const ro=mk('div','ro');box.appendChild(ro);
   const btn=(label,fn)=>{const b=mk('button',null,label);b.type='button';b.onclick=fn;return b};
-  const go=(stateObj,ms)=>{                             // set the saved progress + the pretend time, then reload
+  const go=(stateObj,ms)=>{                             // set the saved progress + the pretend time, then reload (findings are kept)
+    if(stateObj)stateObj={...stateObj,secrets:state.secrets,findSeen:state.findSeen};
     try{if(stateObj)localStorage.setItem(KEY,JSON.stringify(stateObj));else localStorage.removeItem(KEY)}catch(e){}
     const p=new URLSearchParams();p.set('debug','');if(FAST)p.set('fast','');if(DBG.auto)p.set('auto','');
     if(ms!=null){const d=new Date(ms);p.set('now',`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`)}
@@ -1155,6 +1233,10 @@ if(CONFIG.allowDebug){
   box.appendChild(btn('AFTER',()=>go({accepted:true,done:5,entered:5,finale:true},santaMs+864e5)));
   box.appendChild(mk('h4',null,'LANGUAGE'));
   ['en','ru','ro'].forEach(l=>box.appendChild(btn(l.toUpperCase(),()=>setLang(l))));
+  box.appendChild(mk('h4',null,'FINDINGS'));
+  FIND.forEach(f=>box.appendChild(btn(f.key.toUpperCase(),()=>unlockSecret(f.key))));
+  box.appendChild(btn('OPEN',openFinds));
+  box.appendChild(btn('RESET',()=>{state.secrets={};state.findSeen=[];starLit=false;save();updateFindsBtn()}));
   box.appendChild(mk('h4',null,'WHILE PLAYING'));
   box.appendChild(btn('NEXT DATE ⏭',dbgJump));
   box.appendChild(btn('SKIP QUIET MOMENT',()=>{if(quietLeft>0)quietLeft=.001}));
@@ -1182,6 +1264,7 @@ function applyStatic(){
   remindBtn.textContent=remindIsCard?T('cardAgain'):T('remindBtn');
   giftHint.textContent=T('tapBox');clockBtnEl.title=clockBtnEl.ariaLabel=T('clockTip');
   muteBtn.title=muteBtn.ariaLabel=T('muteTip');
+  findsBtn.title=findsBtn.ariaLabel=T('findsBtn');$('#findsH').textContent=T('findsTitle');$('#findsClose').textContent=T('findsClose');
 }
 function setLang(l,persist=true){
   if(!TX[l])l='en';LANG=l;THEMES=TX[l].themes;QUESTIONS=TX[l].questions;
@@ -1247,7 +1330,7 @@ async function start(){
   if(state.accepted&&state.finale)riseHeart();                  // reload after the gift was opened: the heart floats up out of the box as the light comes back
   await sleep(800);
   renderStepper();
-  $('#stepper').classList.add('on');$('#clockUI').classList.add('on');muteBtn.classList.add('on');
+  $('#stepper').classList.add('on');$('#clockUI').classList.add('on');muteBtn.classList.add('on');findsBtn.classList.add('on');
   await sleep(1000);
   if(!state.accepted)await intro();
   await route();
