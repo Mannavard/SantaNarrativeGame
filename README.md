@@ -28,6 +28,8 @@ All stage pictures are one 1536x1024 frame. Helper scripts (Python 3 + `pip inst
 - Gift from one transparent sheet (box left, lid right):  `python3 tools/split_gift_sheet.py art/gift-sheet-berries.png`  → `public/img/gift-body.png`, `gift-lid.png`.
   Or from two white-background pictures:  `python3 tools/prep_gift.py --body box.webp --lid lid.webp`.
   Until these two files exist the gift is simply not shown. Then tune `CONFIG.gift` (`lidFit`, `rim`) by eye. The reveal that rises from the box is `public/img/heart.png` (placeholder, `tools/make_heart.py`).
+- Web images: after the two tools above, run  `python3 tools/prep_images.py`  (needs numpy too): it turns their PNGs into WebP and makes the corner icons
+  and all finding cards (`sm` for phones, `lg` for the rest) from the sources in `art/`.
 Keep the same camera in every picture, keep the clock screen dark (the page draws live digits there) and the bottom ~15% dark (the dialogue sits there).
 
 ## Findings (secrets in the room)
@@ -36,8 +38,9 @@ tree, the snow globe, the snow that piles up on the big tree's branches from sto
 by a click), and quick strokes back and forth across the window (the "painter"). Each one is a finding: its card flies in,
 turns over and flies into the cards button (under the progress bar, right), which opens the collection of six. The lamp just
 blinks when clicked. Between stops the light goes out and the next picture appears as it comes back on.
-- Art: `public/img/findings/` — `back.png` (shared card back) and one picture per finding (`wind.png`, `branch.png`, `globe.png`,
-  `star.png`, `f5.png`, `f6.png`), 2:3, e.g. 400x600. A missing file is drawn as a placeholder.
+- Art: sources `art/card-back-2.png` (shared card back) and `art/finding-<key>.png` (one per finding, with its gold frame);
+  `tools/prep_images.py` crops each to its frame and writes `public/img/findings/<name>-sm.webp` / `-lg.webp`, all 2:3.
+  A finding without a picture (`img:null`) is drawn as a placeholder.
 - Order and file names: `CONFIG.findings`; names on the cards: `TX.<lang>.findings`.
 - A new secret: add its entry to `CONFIG.findings.list` and its name to `TX`, then a prop to `PROPS` in `game.js`
   (`click(x,y)` returns true when the click is its and calls `unlockSecret('<key>')`; optional `draw(c,k)`). Slots 5 and 6 are free.

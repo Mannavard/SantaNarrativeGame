@@ -109,7 +109,7 @@ button{font:inherit;color:inherit}
 
 /* findings: a card is 2:3, back and face are two sides of one element that turns over (.flip).
    Until the art exists (CONFIG.findings), each side draws a placeholder; a loaded picture (img.ok) covers it. */
-.fcard{position:relative;width:var(--cw,150px);aspect-ratio:977/1362;perspective:900px}      /* the shape of img/findings/back.png */
+.fcard{position:relative;width:var(--cw,150px);aspect-ratio:2/3;perspective:900px}      /* every card picture is made 2:3 by tools/prep_images.py */
 .fc-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.5,0,.3,1)}
 .fcard.flip .fc-in{transform:rotateY(180deg)}
 .fc-side{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 0 0 3px #5a4a2a,0 6px 18px rgba(0,0,0,.6)}
@@ -120,8 +120,13 @@ button{font:inherit;color:inherit}
 .fc-side::before{content:"";position:absolute;inset:7%;box-shadow:inset 0 0 0 2px rgba(224,200,138,.45)}
 .fc-side .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--px);font-weight:600;line-height:1}
 .fc-back{background:repeating-linear-gradient(45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),repeating-linear-gradient(-45deg,rgba(224,200,138,.09) 0 2px,transparent 2px 12px),#0d1220}
-.fc-back:has(img.ok){background:none;box-shadow:none;overflow:visible}      /* the real back has its own octagon frame and transparent corners */
+/* real pictures have their own octagon frame and transparent corners: no drawn border; a found card glows warm, a closed one does not */
+.fc-side:has(img.ok){background:none;box-shadow:none;overflow:visible}
 .fc-back:has(img.ok) img{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.fc-face:has(img.ok) img{filter:drop-shadow(0 0 6px rgba(255,190,90,.45)) drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.fslot.fresh .fc-face:has(img.ok){animation:none}
+.fslot.fresh .fc-face img.ok{animation:ffreshImg 1.6s ease-in-out 2}
+@keyframes ffreshImg{0%,100%{filter:drop-shadow(0 0 6px rgba(255,190,90,.45)) drop-shadow(0 6px 10px rgba(0,0,0,.6))}50%{filter:drop-shadow(0 0 22px rgba(255,200,90,.95)) drop-shadow(0 6px 10px rgba(0,0,0,.6))}}
 .fc-back .ph{font-size:calc(var(--cw,150px)*.42);color:rgba(224,200,138,.5)}
 .fc-face{background:radial-gradient(circle at 50% 42%,#5a4420 0,#1d1608 62%,#0b0905 100%)}
 .fc-face .ph{font-size:calc(var(--cw,150px)*.34);color:#ffd98a;text-shadow:0 0 14px rgba(255,190,90,.8)}

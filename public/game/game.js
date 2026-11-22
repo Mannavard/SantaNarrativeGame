@@ -50,7 +50,7 @@ const CONFIG={
   // The gift (box + lid cut by tools/prep_gift.py, heart by tools/make_heart.py - swap img/heart.png for the real reveal).
   // Everything is in the 1536x1024 frame / as fractions of the box:  x,y = centre of the box's base on the sill, w = box width;
   // lidFit = where the closed lid sits on the box;  rim = the opening (left corner, front corner, right corner): the heart is hidden below that "V".
-  gift:{body:'img/gift-body.png',lid:'img/gift-lid.png',heart:'img/heart.png',
+  gift:{body:'img/gift-body.webp',lid:'img/gift-lid.webp',heart:'img/heart.png',
         x:914,y:796,w:150,
         lidFit:{w:1.06,left:-.03,top:-.55},
         rim:[[.03,.27],[.86,.285],[.98,.13]],
@@ -59,22 +59,24 @@ const CONFIG={
   // Progress bar (cut from your sheet by tools/slice_sheet.py):  [cap] frame - ornament - frame - ... - frame [cap]
   // The page greys the art with a filter: locked = the "?" frame in B/W, then the stop's picture appears in B/W,
   // then the filter is removed when that stop arrives (and the next frame opens in B/W).
-  stepper:{locked:'img/ui/locked.png',
-           frames:[1,2,3,4,5].map(i=>`img/ui/step${i}.png`),
-           lines:{left:'img/ui/line-left.png',mid:['img/ui/line-mid1.png','img/ui/line-mid2.png','img/ui/line-mid3.png'],right:'img/ui/line-right.png'},
+  // (the PNGs those tools write are turned into WebP by tools/prep_images.py)
+  stepper:{locked:'img/ui/locked.webp',
+           frames:[1,2,3,4,5].map(i=>`img/ui/step${i}.webp`),
+           lines:{left:'img/ui/line-left.webp',mid:['img/ui/line-mid1.webp','img/ui/line-mid2.webp','img/ui/line-mid3.webp'],right:'img/ui/line-right.webp'},
            unit:256,          // height of a frame in the image files (px): the ornaments are sized relative to it
            lineY:.12,         // where the ornaments sit vertically: 0 = centre of the frames, positive = lower
            colorLines:true,   // the ornaments light up with the frames (false = they stay B/W)
            pixelated:false},  // false for smooth art, true to keep hard pixel edges when scaled
-  // Findings: one card per secret, in this order (the names are TX.findings). Card art is about 5:7 (the shape of back.png: 977x1362), e.g. 400x558; `back` is shared (made by tools/prep_ui_icons.py from art/card-back.png).
-  // A file that does not exist yet is drawn as a placeholder, so just drop the pictures into public/img/findings/.
-  findings:{back:'img/findings/back-2.png',list:[
-    {key:'wind',  img:'img/findings/wind.png'},      // swipe the cursor back and forth over the snow (from the start)
-    {key:'branch',img:'img/findings/branch.png'},    // shake the snow off a branch of the big tree (from stop II: there is no snow on day one)
-    {key:'globe', img:'img/findings/globe.png'},     // shake the snow globe (from stop IV)
-    {key:'star',  img:'img/findings/star.png'},      // light the star on the little tree (from stop IV)
-    {key:'f5',    img:'img/findings/f5.png'},        // not designed yet: nothing unlocks it
-    {key:'f6',    img:'img/findings/f6.png'},        // not designed yet: nothing unlocks it
+  // Findings: one card per secret, in this order (the names are TX.findings). `back` is shared by all cards.
+  // Art names, not files: tools/prep_images.py makes img/findings/<name>-sm.webp (phones) and <name>-lg.webp (the rest), all 2:3,
+  // from art/finding-<key>.png and art/card-back*.png. img:null = no picture yet, a placeholder is drawn.
+  findings:{back:'back-2',list:[
+    {key:'wind',  img:'wind'},      // swipe the cursor back and forth over the snow (from the start)
+    {key:'branch',img:'branch'},    // shake the snow off a branch of the big tree (from stop II: there is no snow on day one)
+    {key:'globe', img:'globe'},     // shake the snow globe (from stop IV)
+    {key:'star',  img:'star'},      // light the star on the little tree (from stop IV)
+    {key:'f5',    img:null},        // not designed yet: nothing unlocks it
+    {key:'f6',    img:null},        // not designed yet: nothing unlocks it
   ]},
   clockGrow:[0,4,0,5],                 // landscape: the dark screen in the pictures is a bit taller than each stage's `clock` rect; the live clock may use this much more [left, up, right, down] (logical px)
   glass:[250,56,1318,644],             // the clear part of the window, where the live snow falls
@@ -789,11 +791,14 @@ const FIND=CONFIG.findings.list,findsBtn=$('#findsBtn'),findsEl=$('#finds'),find
 const isFound=f=>!!state.secrets[f.key];
 const findName=f=>T('findings')[f.key]||T('findLocked');
 const isFresh=f=>isFound(f)&&!state.findSeen.includes(f.key);
-function setArt(img,src){loadImg(src).then(()=>{img.src=src;img.classList.add('ok')}).catch(()=>{})}   // a missing file keeps the placeholder
+// phones (touch + small screen) get the lighter card pictures; everything else the sharper ones
+const CARD_SIZE=matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<700?'sm':'lg';
+const cardArt=name=>name?`img/findings/${name}-${CARD_SIZE}.webp`:null;
+function setArt(img,src){if(src)loadImg(src).then(()=>{img.src=src;img.classList.add('ok')}).catch(()=>{})}   // no picture / a missing file keeps the placeholder
 function makeCard(i){
   const card=document.createElement('div');card.className='fcard';
   card.innerHTML=`<div class="fc-in"><div class="fc-side fc-back"><img alt=""><span class="ph">?</span></div><div class="fc-side fc-face"><img alt=""><span class="ph">${ROM[i]}</span></div></div>`;
-  const [back,face]=card.querySelectorAll('img');setArt(back,CONFIG.findings.back);setArt(face,FIND[i].img);
+  const [back,face]=card.querySelectorAll('img');setArt(back,cardArt(CONFIG.findings.back));setArt(face,cardArt(FIND[i].img));
   return card;
 }
 function updateFindsBtn(){
