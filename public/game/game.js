@@ -333,13 +333,14 @@ const imgCache={};
 const loadImg=src=>imgCache[src]||(imgCache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('missing '+src));i.src=src}));
 const stageFor=n=>Math.min(Math.max(n,0),CONFIG.stages.length-1);      // 0 = start (no tree), 1..5 = stop, 6 = finale -> picture index (the last one is reused)
 
+let dlgPx=0;      // height of the dialogue window, set by fitDialog()
 function layout(){
   const vw=innerWidth,vh=innerHeight,portrait=vh>vw*1.1,topInset=Math.ceil($('#stepper').getBoundingClientRect().bottom)+10;
   document.documentElement.style.setProperty('--below-stepper',topInset+'px');      // the corner buttons sit there (styles.css #corner)
   if(portrait!==PORT){PORT=portrait;LW=PORT?CONFIG.portrait.w:1536;LH=PORT?CONFIG.portrait.h:1024;orientChanged=true}
   dpr=Math.min(2,window.devicePixelRatio||1);
   let s,left,top;
-  if(PORT){const pf=CONFIG.portrait,room=clamp(vh*.27,150,pf.dialogMax);     // phones: the whole window, from under the stepper to just above the dialogue
+  if(PORT){const pf=CONFIG.portrait,room=Math.max(clamp(vh*.27,150,pf.dialogMax),dlgPx);     // phones: the whole window, from under the stepper to just above the dialogue
     s=Math.max(.05,Math.min(vw/LW,(vh-topInset-16-room)/pf.fitY));left=(vw-LW*s)/2;top=topInset}
   else{const room=clamp(vh*.3,150,240);      // the dialogue and the quiet moment get the bottom of the screen: the picture ends above them, only its dark bottom 15% may run under the text
     s=Math.max(.05,Math.min(vw/LW,(vh-topInset)/LH,(vh-topInset-room)/(LH*.85)));left=(vw-LW*s)/2;top=topInset}      // never <=0 (a hidden or zero-height window)
@@ -725,14 +726,15 @@ async function say(lines,{hold=false}={}){
 }
 function choose(opts,autoIdx=0){
   return new Promise(res=>{
-    choicesEl.replaceChildren();
+    choicesEl.replaceChildren();const shownAt=performance.now();
     const btns=opts.map((o,i)=>{
       const b=document.createElement('button');b.type='button';b.textContent=o;
-      b.addEventListener('click',()=>done(i));
+      b.addEventListener('click',()=>{if(performance.now()-shownAt>250)done(i)});      // a held Enter that just advanced the line must not choose at once
       b.addEventListener('pointerenter',()=>{b.focus({preventScroll:true});});
       choicesEl.appendChild(b);return b;
     });
     choicesEl.classList.add('on');dialog.classList.add('choosing');
+    btns[0].focus({preventScroll:true});      // the first button is ready: arrows move, Enter chooses; the mouse is optional
     if(DBG.auto)sleep(800).then(()=>btns[Math.min(autoIdx,btns.length-1)].click());   // debug: say yes, skip reminders
     const onKey=e=>{
       const k=e.key;
@@ -744,6 +746,40 @@ function choose(opts,autoIdx=0){
     document.addEventListener('keydown',onKey);
   });
 }
+
+/* The dialogue window never changes size: it is always as tall as the tallest thing it will ever hold
+   (the longest line, or a line plus its buttons), measured with a hidden twin for the current language and window width.
+   Otherwise the window jumped every time a button or a longer line appeared. */
+let dlgKey='';      // (dlgPx is declared next to layout())
+function fitDialog(){
+  const key=LANG+'|'+innerWidth+'|'+innerHeight;
+  if(key===dlgKey)return;
+  try{
+    const probe=document.createElement('div');probe.id='dialog';
+    probe.style.cssText='height:auto;visibility:hidden;opacity:0;pointer-events:none;bottom:auto;top:0;transition:none';
+    const pt=document.createElement('div');pt.id='text';const pc=document.createElement('div');pc.id='choices';
+    probe.append(pt,pc);document.body.appendChild(probe);
+    probe.classList.remove('on');
+    const h=(txt,q,choices)=>{probe.className=(q?'q':'')+(choices?' choosing':'');pt.className='voice';pt.textContent=txt;
+      pc.className=choices?'on':'';pc.replaceChildren(...(choices||[]).map(c=>{const b=document.createElement('button');b.textContent=c;return b}));return probe.offsetHeight};
+    const tx=TX[LANG],all=[];
+    (function walk(o){if(typeof o==='string'){if(o.length>25&&o.length<260)all.push(o)}else if(Array.isArray(o))o.forEach(walk);else if(o&&typeof o==='object')for(const k in o)if(typeof o[k]!=='function')walk(o[k])})(tx);
+    const questions=tx.questions||[],intro=(tx.intro||[]).map(a=>a[0]),
+          remind=tx.remindQ?tx.remindQ(tx.themes[2]||'',fmtDate(new Date())):'';
+    const yn=[tx.yes,tx.no],cal=[tx.calGoogle,tx.calIcs,tx.calNo];
+    let max=0;
+    all.forEach(t=>{max=Math.max(max,h(t,false,null))});                       // any line alone
+    questions.forEach(t=>{max=Math.max(max,h(t,true,null),h(t,true,[tx.beginQuiet]))});     // a question (big type), alone and with its button
+    if(intro.length)max=Math.max(max,h(intro[intro.length-1],false,yn));
+    if(remind)max=Math.max(max,h(remind,false,cal));
+    probe.remove();
+    const px=Math.min(max,Math.round(innerHeight*.55));
+    document.documentElement.style.setProperty('--dlgH',px+'px');
+    dlgKey=key;
+    if(px!==dlgPx){dlgPx=px;layout()}      // the picture makes room for the window (phones)
+  }catch(e){}
+}
+document.fonts&&document.fonts.ready.then(()=>{dlgKey='';fitDialog()});
 
 /* =====================================================================
    FINDINGS — the collection of secrets. When one is found, its card flies in, turns over and flies
@@ -1389,7 +1425,7 @@ function applyStatic(){
 function setLang(l,persist=true){
   if(!TX[l])l='en';LANG=l;THEMES=TX[l].themes;QUESTIONS=TX[l].questions;
   if(persist){try{localStorage.setItem('journey-lang',l)}catch(e){}}
-  applyStatic();stepNodes.forEach(n=>{n.mode=''});renderStepper();clkKey='';
+  applyStatic();stepNodes.forEach(n=>{n.mode=''});renderStepper();clkKey='';fitDialog();
 }
 gate.querySelectorAll('.langs button').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();setLang(b.dataset.l);gate.classList.remove('pick')}));
 /* ---- background music: starts on the first tap (autoplay rules), fades in, loops; the button switches it on/off ---- */
@@ -1462,7 +1498,7 @@ if(!langKnown)gate.classList.add('pick');
 if(QS.has('debug')){gate.classList.remove('pick');setTimeout(start,50)}
 
 layout();
-let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{fitStepper();renderStepper();layout()},150)});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{fitStepper();renderStepper();layout();fitDialog()},150)});
 // warm the cache so the first dissolve is instant
 CONFIG.stages.forEach((_,i)=>loadImg(stageMeta(i).src).catch(()=>{}));
 requestAnimationFrame(frame);
