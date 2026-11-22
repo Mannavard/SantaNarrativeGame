@@ -172,7 +172,7 @@ en:{
  acc:['The rules are simple. Five stops. One question at each.','There is nothing to type. Nobody is listening, nobody is keeping score. That is the point.',"The questions are for you. Ask them quietly. Answer them honestly. Or don't — it's your road.","One stop a day, five in all. A gift doesn't like to be rushed."],
  accLights:'Above the window, five small lights come on. That is your path.',
  findsTitle:'FINDINGS',findsBtn:'Findings',found:'A FINDING',findLocked:'???',findsClose:'CLOSE',
- findings:{wind:'Lord of the Snowflakes',branch:'Shake Off Winter',globe:'A Tiny Winter',star:'Light the Star',f5:'',f6:''},
+ findings:{wind:'The Blizzard Painter',branch:'Shake Off Winter',globe:'A Tiny Winter',star:'Starlight',f5:'',f6:''},
 },
 ru:{
  title:'Путешествие',
@@ -236,7 +236,7 @@ ru:{
  acc:['Правила простые. Пять остановок. На каждой — один вопрос.','Печатать ничего не нужно. Никто не слушает и никто не ведёт счёт. В этом смысл.','Вопросы — для тебя. Задавай их тихо. Отвечай честно. А можешь и не отвечать — это твоя дорога.','Одна остановка в день, всего пять. Подарок не любит спешки.'],
  accLights:'Над окном загораются пять маленьких огоньков. Это твой путь.',
  findsTitle:'НАХОДКИ',findsBtn:'Находки',found:'НАХОДКА',findLocked:'???',findsClose:'ЗАКРЫТЬ',
- findings:{wind:'Повелитель Снежинок',branch:'Стряхнуть Зиму',globe:'Маленькая Зима',star:'Зажечь Звезду',f5:'',f6:''},
+ findings:{wind:'Художник Метели',branch:'Стряхнуть Зиму',globe:'Маленькая Зима',star:'Звёздный Свет',f5:'',f6:''},
 },
 ro:{
  title:'Călătoria',
@@ -300,7 +300,7 @@ ro:{
  acc:['Regulile sunt simple. Cinci opriri. La fiecare, o întrebare.','Nu trebuie să scrii nimic. Nimeni nu ascultă, nimeni nu ține scorul. Asta e ideea.','Întrebările sunt pentru tine. Pune-le în liniște. Răspunde sincer. Sau nu — e drumul tău.','O oprire pe zi, cinci în total. Unui cadou nu-i place graba.'],
  accLights:'Deasupra ferestrei se aprind cinci luminițe. Acesta e drumul tău.',
  findsTitle:'DESCOPERIRI',findsBtn:'Descoperiri',found:'O DESCOPERIRE',findLocked:'???',findsClose:'ÎNCHIDE',
- findings:{wind:'Stăpânul Fulgilor',branch:'Scutură Iarna',globe:'O Iarnă Mică',star:'Aprinde Steaua',f5:'',f6:''},
+ findings:{wind:'Pictorul Viscolului',branch:'Scutură Iarna',globe:'O Iarnă Mică',star:'Lumină de Stea',f5:'',f6:''},
 },
 };
 let LANG='en',langKnown=false;
@@ -325,7 +325,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
 let PORT=false,LW=1536,LH=1024,orientChanged=false;          // logical frame of the stage pictures: 1536x1024 on wide screens, CONFIG.portrait on phones
 /* the stage as it is meant for the current orientation (portrait overrides are merged over the base entry) */
 const stageMeta=i=>{const m=CONFIG.stages[i];if(!m||!PORT)return m;const P=CONFIG.portrait;return {...m,clock:P.clock,tilt:P.tilt,...m.p}};
-const artEl=$('#art'),imgsEl=$('#imgs'),imgA=$('#imgA'),dis=$('#dis'),fx=$('#fx'),fctx=fx.getContext('2d'),clk=$('#clk'),cctx=clk.getContext('2d');
+const artEl=$('#art'),imgsEl=$('#imgs'),imgA=$('#imgA'),fx=$('#fx'),fctx=fx.getContext('2d'),clk=$('#clk'),cctx=clk.getContext('2d');
 let box={s:1,left:0,top:0,w:LW,h:LH,P:2},glass={x:0,y:0,w:1,h:1},flakes=[];
 let stageIdx=0,meta=stageMeta(0);
 let breathA=0,t=0,lampPower=0,lampTarget=0,lampRate=14,flick=1,dip=0,lastBright=-1,dpr=1;
@@ -352,7 +352,7 @@ function layout(){
   flakes=[];const n=Math.round(glass.w*glass.h/105);
   for(let i=0;i<n;i++)flakes.push({x:Math.random()*glass.w,y:Math.random()*glass.h,z:Math.random(),ph:Math.random()*6.28,vx:0,vy:0});
   placeClock();placeGift();
-  if(orientChanged){orientChanged=false;showStage(stageIdx,true)}     // the phone was turned: switch to the other set of pictures
+  if(orientChanged){orientChanged=false;showStage(stageIdx)}     // the phone was turned: switch to the other set of pictures
 }
 function placeClock(){
   const c0=meta.clock,G=PORT?[0,0,0,0]:CONFIG.clockGrow,c=[c0[0]-G[0],c0[1]-G[1],c0[2]+G[2],c0[3]+G[3]],s=box.s,x=box.left+c[0]*s,y=box.top+c[1]*s,w=(c[2]-c[0])*s,h=(c[3]-c[1])*s;
@@ -435,26 +435,11 @@ async function openGiftBox(){
   await sleep(500);
 }
 
-/* ---- stage transitions: ordered-dither dissolve between two pictures ---- */
-const BAY8=(()=>{let m=[[0,2],[3,1]];for(let k=0;k<2;k++){const n=m.length,nm=Array.from({length:n*2},()=>Array(n*2));
-  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=m[y][x]*4;nm[y][x]=v;nm[y][x+n]=v+2;nm[y+n][x]=v+3;nm[y+n][x+n]=v+1}m=nm}return m.flat().map(v=>(v+.5)/64)})();
-async function showStage(idx,instant=false){
+/* ---- stage pictures: swapped at once; between stages always in the dark (darkSwap) ---- */
+async function showStage(idx){
   const m=stageMeta(idx);if(!m)return;
   const im=await loadImg(m.src).catch(()=>null);if(!im)return;
-  if(instant||!imgA.getAttribute('src')){imgA.src=m.src;await imgA.decode().catch(()=>{});stageIdx=idx;meta=m;placeClock();return}
-  if(idx===stageIdx)return;
-  const g=dis.getContext('2d'),B=Math.max(6,Math.round(box.w/110));
-  dis.width=Math.round(box.w);dis.height=Math.round(box.h);dis.style.display='block';
-  const cols=Math.ceil(dis.width/B),rows=Math.ceil(dis.height/B),order=[];
-  for(let by=0;by<rows;by++)for(let bx=0;bx<cols;bx++)order.push([bx,by,BAY8[(by&7)*8+(bx&7)]+Math.random()*.03]);
-  order.sort((a,b)=>a[2]-b[2]);
-  const kx=im.naturalWidth/dis.width,ky=im.naturalHeight/dis.height,dur=FAST?300:2400,t0=performance.now();let drawn=0;
-  await new Promise(res=>{(function step(){
-    const p=Math.min(1,(performance.now()-t0)/dur),target=Math.floor(p*order.length);
-    for(;drawn<target;drawn++){const [bx,by]=order[drawn];g.drawImage(im,bx*B*kx,by*B*ky,B*kx,B*ky,bx*B,by*B,B,B)}
-    p<1?requestAnimationFrame(step):res()})()});
-  imgA.src=m.src;await imgA.decode().catch(()=>{});dis.style.display='none';
-  stageIdx=idx;meta=m;placeClock();
+  imgA.src=m.src;await imgA.decode().catch(()=>{});stageIdx=idx;meta=m;placeClock();
 }
 
 /* ---- live clock: 7-segment digits drawn on the clock screen of the picture, with a title and a mode switch ---- */
@@ -673,6 +658,13 @@ async function lampDyingSeq(){
 }
 function lampOut(){lampRate=1.4;lampTarget=0}
 async function stageFlicker(){for(const v of [.55,1,.7,1]){setLamp(v);await sleep(90)}}
+/* between stages: the light goes out, the picture is swapped in the dark (the new things appear with the light, and the
+   slightly different framing of the pictures never shows), then the lamp comes back on */
+async function darkSwap(idx){
+  lampOut();await sleep(2600);
+  await showStage(idx);await sleep(900);
+  await lampOnSeq();await sleep(500);
+}
 
 /* =====================================================================
    DIALOGUE
@@ -1005,9 +997,24 @@ const lampProp={
 
 const PROPS=[starProp,globeProp,branchProp,lampProp];
 
+/* the wind: on purpose only — quick strokes back and forth across the window, five sharp turns within 2.5 s
+   (an ordinary move of the mouse, or reaching for a button, never does it). Only once the journey has begun. */
+const swipe={x:0,t:0,dir:0,run:0,turns:[]};
+addEventListener('pointermove',e=>{
+  if(state.secrets.wind||!state.accepted||!box.s)return;
+  const x=(e.clientX-box.left)/box.s,y=(e.clientY-box.top)/box.s,g=meta.glass||CONFIG.glass,now=performance.now();
+  if(x<g[0]||x>g[2]||y<g[1]||y>g[3]){Object.assign(swipe,{x,t:now,dir:0,run:0});return}
+  const dx=x-swipe.x,ms=Math.max(1,now-swipe.t);swipe.x=x;swipe.t=now;
+  if(Math.abs(dx)<1)return;
+  const dir=Math.sign(dx);
+  if(dir===swipe.dir){if(Math.abs(dx)/ms>.5)swipe.run+=Math.abs(dx);return}       // the stroke grows while it is quick (> 500 logical px/s)
+  if(swipe.run>160)swipe.turns.push(now);                                          // a turn counts after a quick stroke of 160+ px
+  swipe.dir=dir;swipe.run=0;swipe.turns=swipe.turns.filter(t=>now-t<2500);
+  if(swipe.turns.length>=5)unlockSecret('wind');
+},{passive:true});
+
 /* called once per frame from frame() */
 function stepRoom(dt){
-  if(!state.secrets.wind&&vort.length>=3)unlockSecret('wind');      // the wind: a fast swipe back and forth sheds a few wake swirls at once (stirSnow)
   const c=hctx,S=box.s*dpr;
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,hiEl.width,hiEl.height);c.setTransform(S,0,0,S,0,0);
   for(const p of PROPS)if(p.draw)p.draw(c,dt);
@@ -1099,9 +1106,7 @@ const santaDay=()=>new Date(santaMs).toLocaleDateString(LOC[LANG],{month:'long',
 const INTRO=()=>T('intro').map(([t,w])=>L(t,w));
 
 async function runStop(n){
-  const already=stageIdx===stageFor(n);                  // stop I: the picture was already swapped in the dark (see accept())
-  await showStage(stageFor(n));
-  if(!already)stageFlicker();
+  if(stageIdx!==stageFor(n))await darkSwap(stageFor(n));  // stop I: already swapped in the dark by accept()
   if(state.entered<n){state.entered=n;save();renderStepper(true)}
   if(n>=5)showGift(true);
   const arrive=n===1?[L(T('arrive')[0],'SANTA')]:[L(T('changed')),L(T('arrive')[n-1],'SANTA')];     // stop I appears before the player's eyes, so no "something has changed"
@@ -1167,8 +1172,8 @@ async function waitForFinale(){
 }
 
 async function finale(){
-  await showStage(stageFor(6));
-  stageFlicker();await showGift(false);
+  if(stageIdx!==stageFor(6))await darkSwap(stageFor(6));else stageFlicker();     // the finale uses stop V's picture unless it has its own
+  await showGift(false);
   await say([L(T('finDay')),L(T('finBox'),'SANTA'),L(T('finOpen')+(giftOn?'':T('finNoBox')),'SANTA')],{hold:true});
   await waitForGiftClick();
   dialog.classList.remove('on');
@@ -1243,10 +1248,7 @@ async function accept(){
   await say([L(declines?T('acc1b'):T('acc1'),'SANTA'),...T('acc').map(t=>L(t,'SANTA')),
     L(T('accLights'),undefined,()=>{state.accepted=true;save();renderStepper(true)})]);
   dialog.classList.remove('on');
-  // the questions start at once: the light goes out, the picture is swapped in the dark (so the different framing of the pictures never shows), the light comes back
-  await sleep(1200);lampOut();await sleep(2600);
-  await showStage(stageFor(1),true);await sleep(900);
-  await lampOnSeq();await sleep(700);
+  await sleep(1200);await darkSwap(stageFor(1));await sleep(200);        // the questions start at once
 }
 
 async function intro(){
@@ -1408,7 +1410,7 @@ async function start(){
   MUS&&MUS.init();                                            // inside the tap, before any await
   gate.classList.add('hide');
   // show the picture matching the saved progress (the bare park for a first visit); the next stop's change is dissolved in by runStop
-  await showStage(stageFor(state.accepted?state.entered:0),true);
+  await showStage(stageFor(state.accepted?state.entered:0));
   if(state.accepted&&state.finale)showGift(false,'rise');else if(state.accepted&&state.done>=5)showGift(false);
   await sleep(900);
   artEl.classList.add('on');

@@ -31,10 +31,11 @@ All stage pictures are one 1536x1024 frame. Helper scripts (Python 3 + `pip inst
 Keep the same camera in every picture, keep the clock screen dark (the page draws live digits there) and the bottom ~15% dark (the dialogue sits there).
 
 ## Findings (secrets in the room)
-Small things that answer a click while the player waits between stops (on a computer; not on phones yet): the star on the
-little tree, the snow globe, snow on the big tree's branches (one more branch each day from stop II), and a fast swipe of the
-cursor through the snow. Each one is a finding: its card flies in, turns over and flies into the cards button (top right),
-which opens the collection of six. The lamp just blinks when clicked.
+Small things that answer a click while the player waits between stops (computers and phones): the unlit star on the little
+tree, the snow globe, the snow that piles up on the big tree's branches from stop II (found in the picture itself, shaken off
+by a click), and quick strokes back and forth across the window (the "painter"). Each one is a finding: its card flies in,
+turns over and flies into the cards button (under the progress bar, right), which opens the collection of six. The lamp just
+blinks when clicked. Between stops the light goes out and the next picture appears as it comes back on.
 - Art: `public/img/findings/` — `back.png` (shared card back) and one picture per finding (`wind.png`, `branch.png`, `globe.png`,
   `star.png`, `f5.png`, `f6.png`), 2:3, e.g. 400x600. A missing file is drawn as a placeholder.
 - Order and file names: `CONFIG.findings`; names on the cards: `TX.<lang>.findings`.
